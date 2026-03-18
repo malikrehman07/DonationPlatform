@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
 import { useCallback, useEffect } from 'react';
-import axios from 'axios'
+// import axios from 'axios'
 import { Button, Col, Progress, Row, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useAuthContext } from '../../../../context/Auth';
+// import { useAuthContext } from '../../../../context/Auth';
 
 const { Title, Paragraph } = Typography
 const Compaigns = () => {
     const [compaigns, setCompaigns] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
-    const { user } = useAuthContext()
+    // const { user } = useAuthContext()
     const [donations, setDonations] = useState([])
     const [compaignTotals, setCompaignTotals] = useState({});
     return (
