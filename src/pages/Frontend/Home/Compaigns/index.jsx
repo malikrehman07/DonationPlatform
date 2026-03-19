@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import { useCallback, useEffect } from 'react';
-// import axios from 'axios'
 import { Button, Col, Progress, Row, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-// import { useAuthContext } from '../../../../context/Auth';
 
 const { Title, Paragraph } = Typography
 const Compaigns = () => {
