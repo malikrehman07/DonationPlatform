@@ -9,7 +9,6 @@ const Compaigns = () => {
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
     // const { user } = useAuthContext()
-    
     const [donations, setDonations] = useState([])
     const [compaignTotals, setCompaignTotals] = useState({});
     return (
