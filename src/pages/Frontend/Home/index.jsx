@@ -3,6 +3,8 @@ import Hero from './Hero'
 import Companies from './Companies'
 import Compaigns from './Compaigns'
 import Help from './Help'
+import Donate from './Donate'
+import NewsLetter from './Newsletter'
 
 const Home = () => {
   return (
@@ -11,6 +13,8 @@ const Home = () => {
       <Companies />
       <Compaigns />
       <Help />
+      <Donate />
+      <NewsLetter />
     </main>
   )
 }
