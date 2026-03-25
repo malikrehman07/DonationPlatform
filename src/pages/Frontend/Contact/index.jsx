@@ -31,6 +31,7 @@ const Contact = () => {
     }, 2000);
   };
 
+  
   return (
     <div className="container my-5 py-4">
       <Row gutter={[24, 24]}>
