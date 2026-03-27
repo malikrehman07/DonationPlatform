@@ -1,5 +1,6 @@
 import { Button, Col, Form, Input, Row, Typography } from 'antd'
 import React from 'react'
+import { Link } from 'react-router-dom';
 
 const Login = () => {
     const { Title, Paragraph } = Typography;
@@ -29,9 +30,8 @@ const Login = () => {
                         </Row>
                         <Row>
                             <Col span={24}>
-                                <Form.Item>
-                                    <Button type='primary' variant="solid" color="default" block>Login</Button>
-                                </Form.Item>
+                                <Button type='primary' variant="solid" color="default" block>Login</Button>
+                                <Paragraph className='text-center my-1' >Don't have an account? <Link to="/auth/register">Register</Link></Paragraph>
                             </Col>
                         </Row>
                     </Form>
