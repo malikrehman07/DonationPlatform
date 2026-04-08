@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Form, Input, Button, Select, Upload, Row, Col } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { supabase } from '../../../../config/supabase';
-import axios from 'axios';
+// import { supabase } from '../../../../config/supabase';
+// import axios from 'axios';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -16,112 +16,112 @@ const EditCompaign = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
 
-  const fetchCompaigns = async () => {
-    try {
-      const res = await axios.get(`https://backend-theta-silk-38.vercel.app/compaigns/read/${id}`);
-      const data = res.data.compaign;
-      form.setFieldsValue(data);
+  // const fetchCompaigns = async () => {
+  //   try {
+  //     const res = await axios.get(`https://backend-theta-silk-38.vercel.app/compaigns/read/${id}`);
+  //     const data = res.data.compaign;
+  //     form.setFieldsValue(data);
 
-      if (data.imageUrls?.length) {
-        const previewList = data.imageUrls.map((url, index) => ({
-          uid: `${index}`,
-          name: `image-${index + 1}`,
-          status: 'done',
-          url,
-        }));
-        setFileList(previewList);
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      window.notify("Failed to fetch Compaign", "error");
-      navigate("/dashboard/compaign/all");
-    }
-  };
+  //     if (data.imageUrls?.length) {
+  //       const previewList = data.imageUrls.map((url, index) => ({
+  //         uid: `${index}`,
+  //         name: `image-${index + 1}`,
+  //         status: 'done',
+  //         url,
+  //       }));
+  //       setFileList(previewList);
+  //     }
+  //   } catch (err) {
+  //     console.error("Fetch error:", err);
+  //     window.notify("Failed to fetch Compaign", "error");
+  //     navigate("/dashboard/compaign/all");
+  //   }
+  // };
 
-  const handleRemove = async (file) => {
-    try {
-      const url = file.url || file.response?.url;
-      if (!url) return;
+  // const handleRemove = async (file) => {
+  //   try {
+  //     const url = file.url || file.response?.url;
+  //     if (!url) return;
 
-      const path = new URL(url).pathname.split("/storage/v1/object/public/Compaign/")[1];
+  //     const path = new URL(url).pathname.split("/storage/v1/object/public/Compaign/")[1];
 
-      if (path) {
-        const { error } = await supabase.storage.from("Compaign").remove([path]);
-        if (error) {
-          console.error("Failed to delete from Supabase:", error.message);
-          window.notify("Failed to delete image", "error");
-        } else {
-          window.notify("Image removed from Supabase", "success");
-        }
-      }
-    } catch (err) {
-      console.error("Remove error:", err);
-    }
-  };
+  //     if (path) {
+  //       const { error } = await supabase.storage.from("Compaign").remove([path]);
+  //       if (error) {
+  //         console.error("Failed to delete from Supabase:", error.message);
+  //         window.notify("Failed to delete image", "error");
+  //       } else {
+  //         window.notify("Image removed from Supabase", "success");
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error("Remove error:", err);
+  //   }
+  // };
 
 
 
-  const handleUpdate = async () => {
-    try {
-      const values = await form.validateFields();
-      setIsProcessing(true);
+  // const handleUpdate = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     setIsProcessing(true);
 
-      let imageUrls = [];
+  //     let imageUrls = [];
 
-      for (let fileObj of fileList) {
-        const file = fileObj.originFileObj;
+  //     for (let fileObj of fileList) {
+  //       const file = fileObj.originFileObj;
 
-        if (!file) {
-          if (fileObj.url) imageUrls.push(fileObj.url);
-          continue;
-        }
-        const fileExt = file.name?.split('.').pop();
-        const filePath = `compaigns/${id}/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('GiveHope')
-          .upload(filePath, file);
+  //       if (!file) {
+  //         if (fileObj.url) imageUrls.push(fileObj.url);
+  //         continue;
+  //       }
+  //       const fileExt = file.name?.split('.').pop();
+  //       const filePath = `compaigns/${id}/${Date.now()}.${fileExt}`;
+  //       const { error: uploadError } = await supabase.storage
+  //         .from('GiveHope')
+  //         .upload(filePath, file);
 
-        if (uploadError) {
-          console.warn("Upload error:", uploadError);
-          continue;
-        }
+  //       if (uploadError) {
+  //         console.warn("Upload error:", uploadError);
+  //         continue;
+  //       }
 
-        const { data: publicUrlData } = supabase.storage
-          .from("GiveHope")
-          .getPublicUrl(filePath);
-        imageUrls.push(publicUrlData?.publicUrl);
-      }
+  //       const { data: publicUrlData } = supabase.storage
+  //         .from("GiveHope")
+  //         .getPublicUrl(filePath);
+  //       imageUrls.push(publicUrlData?.publicUrl);
+  //     }
 
-      const token = localStorage.getItem("token");
+  //     const token = localStorage.getItem("token");
 
-      await axios.put(`https://backend-theta-silk-38.vercel.app/compaigns/update/${id}`, {
-        ...values,
-        imageUrls,
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+  //     await axios.put(`https://backend-theta-silk-38.vercel.app/compaigns/update/${id}`, {
+  //       ...values,
+  //       imageUrls,
+  //     }, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`
+  //       }
+  //     });
 
-      window.notify("Compaign updated successfully!", "success");
-      navigate("/dashboard/compaign/all");
-    } catch (err) {
-      if (err.response) {
-        console.error("Server error:", err.response.data);
-        window.notify(err.response.data.message || "Server Error", "error");
-      } else {
-        console.error("Client error:", err.message);
-        window.notify("Network or client error", "error");
-      }
+  //     window.notify("Compaign updated successfully!", "success");
+  //     navigate("/dashboard/compaign/all");
+  //   } catch (err) {
+  //     if (err.response) {
+  //       console.error("Server error:", err.response.data);
+  //       window.notify(err.response.data.message || "Server Error", "error");
+  //     } else {
+  //       console.error("Client error:", err.message);
+  //       window.notify("Network or client error", "error");
+  //     }
 
-    } finally {
-      setIsProcessing(false);
-    }
-  }
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // }
 
-  useEffect(() => {
-    fetchCompaigns();
-  }, [id]);
+  // useEffect(() => {
+  //   fetchCompaigns();
+  // }, [id]);
 
   return (
     <div className="dashboard-content">

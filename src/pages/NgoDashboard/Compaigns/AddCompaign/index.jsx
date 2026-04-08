@@ -1,93 +1,93 @@
 import React, { useState } from 'react';
 import { Typography, Input, Button, Card, Form, Select, Upload, Row, Col } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { useAuthContext } from '../../../../context/Auth';
-import { supabase } from '../../../../config/supabase';
-import axios from 'axios';
+// import { useAuthContext } from '../../../../context/Auth';
+// import { supabase } from '../../../../config/supabase';
+// import axios from 'axios';
 const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 const initialState = { title: "", description: "", category: "", amount: '' }
 const AddCompaign = () => {
-    const { user } = useAuthContext()
+    // const { user } = useAuthContext()
     const [fileList, setFileList] = useState([])
     const [state, setState] = useState(initialState)
     const [isProccessing, setIsProccessing] = useState(false)
 
     const handleChange = (e) => setState(s => ({ ...s, [e.target.name]: e.target.value }))
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
 
-        let { title, description, category, amount } = state;
+    //     let { title, description, category, amount } = state;
 
-        title = title.trim();
-        if (title.length < 3) { return window.notify("Please Enter the Product Title", "error") }
-
-
-        description = description.trim();
-        if (description.length > 500 || description == "") { return window.notify("Description must be provided and no more than 500 characters", "error"); }
+    //     title = title.trim();
+    //     if (title.length < 3) { return window.notify("Please Enter the Product Title", "error") }
 
 
-        if (category == "") { return window.notify("Please Select the Category", "error") }
+    //     description = description.trim();
+    //     if (description.length > 500 || description == "") { return window.notify("Description must be provided and no more than 500 characters", "error"); }
 
 
-        if (fileList.length === 0 || fileList.length > 5) { return window.notify("Please upload between 1 and 5 images", "error") }
-
-        setIsProccessing(true)
-        const compaignId = getRandomId();
-        const imageUrls = [];
-
-        for (let fileObj of fileList) {
-            const file = fileObj.originFileObj;
-            const url = await handleUploadFile(file, compaignId); // use Date.now() as product ID base
-            if (url) imageUrls.push(url);
-        }
-
-        if (imageUrls.length === 0) {
-            return window.notify("Image upload failed", "error");
-        }
+    //     if (category == "") { return window.notify("Please Select the Category", "error") }
 
 
-        const compaignData = { uid: user.uid, title, description, category, amount, imageUrls };
+    //     if (fileList.length === 0 || fileList.length > 5) { return window.notify("Please upload between 1 and 5 images", "error") }
 
-        try {
-            const token = localStorage.getItem("token");
-            console.log("Token:", token);
-            const res = await axios.post("https://backend-theta-silk-38.vercel.app/compaigns/add", compaignData, {
-                headers: {
-                    Authorization: `Bearer ${token}`, // ✅ Must be "Bearer <token>"
-                }
-            });
-            window.notify("Compaign added successfully!", "success");
-            setState(initialState);
-            setFileList([]);
-        } catch (error) {
-            console.error("Add Compaign Error:", error); // Log full error
-            const msg = error?.response?.data?.message || "Failed to add Compaign";
-            window.notify(msg, "error");
-        } finally {
-            setIsProccessing(false);
-        }
+    //     setIsProccessing(true)
+    //     const compaignId = getRandomId();
+    //     const imageUrls = [];
 
-    }
-    const handleUploadFile = async (file, compaignId) => {
-        // const id = getRandomId()
-        const fileExt = file.name.split('.').pop();
-        const filePath = `compaigns/${compaignId}/${Date.now()}.${fileExt}`; // removed extra spaces
+    //     for (let fileObj of fileList) {
+    //         const file = fileObj.originFileObj;
+    //         const url = await handleUploadFile(file, compaignId); // use Date.now() as product ID base
+    //         if (url) imageUrls.push(url);
+    //     }
 
-        const { data, error } = await supabase.storage.from('GiveHope').upload(filePath, file);
+    //     if (imageUrls.length === 0) {
+    //         return window.notify("Image upload failed", "error");
+    //     }
 
-        if (error) {
-            console.error("Upload error:", error);
-            return null;
-        }
 
-        const { data: publicUrlData } = supabase.storage.from('GiveHope').getPublicUrl(filePath);
+    //     const compaignData = { uid: user.uid, title, description, category, amount, imageUrls };
 
-        return publicUrlData?.publicUrl || null;
-    };
+    //     try {
+    //         const token = localStorage.getItem("token");
+    //         console.log("Token:", token);
+    //         const res = await axios.post("https://backend-theta-silk-38.vercel.app/compaigns/add", compaignData, {
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`, // ✅ Must be "Bearer <token>"
+    //             }
+    //         });
+    //         window.notify("Compaign added successfully!", "success");
+    //         setState(initialState);
+    //         setFileList([]);
+    //     } catch (error) {
+    //         console.error("Add Compaign Error:", error); // Log full error
+    //         const msg = error?.response?.data?.message || "Failed to add Compaign";
+    //         window.notify(msg, "error");
+    //     } finally {
+    //         setIsProccessing(false);
+    //     }
+
+    // }
+    // const handleUploadFile = async (file, compaignId) => {
+    //     // const id = getRandomId()
+    //     const fileExt = file.name.split('.').pop();
+    //     const filePath = `compaigns/${compaignId}/${Date.now()}.${fileExt}`; // removed extra spaces
+
+    //     const { data, error } = await supabase.storage.from('GiveHope').upload(filePath, file);
+
+    //     if (error) {
+    //         console.error("Upload error:", error);
+    //         return null;
+    //     }
+
+    //     const { data: publicUrlData } = supabase.storage.from('GiveHope').getPublicUrl(filePath);
+
+    //     return publicUrlData?.publicUrl || null;
+    // };
 
     return (
         <div className="">
