@@ -17,16 +17,16 @@ const AllCompaigns = () => {
   const searchParams = new URLSearchParams(location.search);
   const highlightId = searchParams.get('highlight');
 
-  useEffect(() => {
-    if (highlightId) {
-      const timer = setTimeout(() => {
-        // force re-render to remove highlight
-        setCompaigns((prev) => [...prev]);
-      }, 2000);
+  // useEffect(() => {
+  //   if (highlightId) {
+  //     const timer = setTimeout(() => {
+  //       // force re-render to remove highlight
+  //       setCompaigns((prev) => [...prev]);
+  //     }, 2000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [highlightId]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [highlightId]);
 
 
 
