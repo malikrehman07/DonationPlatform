@@ -8,6 +8,8 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import CompaignPage from './CompaignPage'
 import AllCompaigns from './AllCompaigns'
+import Checkout from './Checkout'
+import ThankYou from './ThankYou'
 const Frontend = () => {
   return (
     <>
@@ -16,6 +18,8 @@ const Frontend = () => {
         <Route path="/" element={<Home />} />
         <Route path="/compaigns" element={<AllCompaigns />} />
         <Route path="/compaign/:id" element={<CompaignPage />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NoPage />} />
