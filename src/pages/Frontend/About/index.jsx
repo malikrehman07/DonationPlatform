@@ -45,7 +45,6 @@ const About = () => {
             <Paragraph className='my-2' style={{ fontSize: '16px' }} >
               Because when you give hope, you give someone a future. 💙
             </Paragraph>
-
             <Button type="primary" icon={<SmileOutlined />} size="large" onClick={() => { navigate("/compaigns") }} >Explore Our Compaigns</Button>
           </Col>
         </Row>
