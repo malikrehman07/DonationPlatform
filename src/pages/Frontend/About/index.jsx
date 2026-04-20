@@ -46,6 +46,7 @@ const About = () => {
               Because when you give hope, you give someone a future. 💙
             </Paragraph>
             
+            
             <Button type="primary" icon={<SmileOutlined />} size="large" onClick={() => { navigate("/compaigns") }} >Explore Our Compaigns</Button>
           </Col>
         </Row>
