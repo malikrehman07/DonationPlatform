@@ -39,6 +39,7 @@ const CompaignPage = () => {
         message.info("Donation flow is currently disabled for demo purposes. Please check back later.");
     };
 
+    
     // useEffect(() => {
     //     const fetchCompaign = async () => {
     //         setLoading(true);
