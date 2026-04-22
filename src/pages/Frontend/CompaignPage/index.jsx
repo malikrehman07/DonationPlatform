@@ -70,7 +70,6 @@ const CompaignPage = () => {
     // }, [id]);
 
 
-
     if (loading) return <Spin size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', }} />;
 
     if (!compaign) {
