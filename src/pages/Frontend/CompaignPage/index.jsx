@@ -65,7 +65,6 @@ const CompaignPage = () => {
     //             setLoading(false);
     //         }
     //     };
-
     //     fetchCompaign();
     // }, [id]);
 
