@@ -65,7 +65,6 @@ const CompaignPage = () => {
     //             setLoading(false);
     //         }
     //     };
-    
     //     fetchCompaign();
     // }, [id]);
 
@@ -201,6 +200,7 @@ const CompaignPage = () => {
                     </Col>
                 </Row>
                 <Divider style={{ borderColor: '#222' }} />
+                {/* <Divider style={{ borderColor: '#222' }} /> */}
             </div>
         </>
     );
