@@ -1,7 +1,6 @@
-import { Button, Col, Space, Row, Typography, Spin, Table, Image } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../../../../config/supabase';
+import { Button, Space, Row, Col, Typography, Spin, Table, Image } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthContext } from '../../../../context/Auth';
 
@@ -9,177 +8,185 @@ const { Title } = Typography;
 
 const AllCompaigns = () => {
   const { user } = useAuthContext();
+  const navigate = useNavigate();
+
   const [compaigns, setCompaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [compaignTotals, setCompaignTotals] = useState({});
-  const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const highlightId = searchParams.get('highlight');
 
-  // useEffect(() => {
-  //   if (highlightId) {
-  //     const timer = setTimeout(() => {
-  //       // force re-render to remove highlight
-  //       setCompaigns((prev) => [...prev]);
-  //     }, 2000);
+  // =========================
+  // FETCH NGO CAMPAIGNS
+  // =========================
+  const getCompaigns = useCallback(async () => {
+    if (!user?.uid) return;
 
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [highlightId]);
+    setLoading(true);
 
+    try {
+      const token = localStorage.getItem("token");
 
+      const [compRes, donRes] = await Promise.all([
+        axios.get(
+          `http://localhost:3000/compaigns/my/${user.uid}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        ),
 
-//   const handleDelete = async (compaign) => {
-//     try {
-//       // 🧹 Delete the image from Supabase
-//       if (compaign.imageUrls?.length) {
-//         for (const url of compaign.imageUrls) {
-//           const pathParts = new URL(url).pathname.split(
-//             "/storage/v1/object/public/GiveHope/"
-//           );
-//           const filePath = pathParts[1];
-//           if (filePath) {
-//             const { error: deleteError } = await supabase.storage
-//               .from("GiveHope")
-//               .remove([filePath]);
-//             if (deleteError) {
-//               console.warn("Image deletion failed:", deleteError.message);
-//             }
-//           }
-//         }
-//       }
+        axios.get(
+          `http://localhost:3000/dashboard/donations`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+      ]);
 
-//       const token = localStorage.getItem("token");
-//       await axios.delete(`https://backend-theta-silk-38.vercel.app/compaigns/delete/${compaign._id}`, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
+      setCompaigns(compRes.data.compaigns || []);
 
-//       window.notify("Campaign deleted successfully", "success");
-//       setCompaigns((prev) => prev.filter((s) => s._id !== compaign._id));
-//     } catch (err) {
-//       console.error(err);
-//       window.notify("Failed to delete campaign", "error");
-//     }
-//   };
+      // =========================
+      // CALCULATE RAISED AMOUNT
+      // =========================
+      const totals = {};
 
-//   const getCompaigns = useCallback(async () => {
-//     setLoading(true);
-//     try {
-//       const [compRes, donRes] = await Promise.all([
-//         axios.get("https://backend-theta-silk-38.vercel.app/compaigns/read"),
-//         axios.get("https://backend-theta-silk-38.vercel.app/dashboard/donations"),
-//       ]);
+      (donRes.data.donations || []).forEach((donation) => {
+        const compId = donation.compaign?.compaignId;
 
-//       setCompaigns(compRes.data.compaigns);
+        if (!compId) return;
 
-//       // ✅ Group donations by campaignId
-//       const totals = {};
-//       (donRes.data.donations || []).forEach((donation) => {
-//         const compId = donation.compaign?.compaignId;
-//         if (!compId) return;
-//         const donationTotal = parseFloat(donation.amount || 0);
-//         totals[compId] = (totals[compId] || 0) + donationTotal;
-//       });
-//       setCompaignTotals(totals);
-//     } catch (error) {
-//       window.notify("Error fetching campaigns or donations", "error");
-//       console.error(error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
+        const amount = Number(donation.amount || 0);
 
-//   useEffect(() => {
-//     getCompaigns();
-//   }, [getCompaigns]);
+        totals[compId] = (totals[compId] || 0) + amount;
+      });
 
+      setCompaignTotals(totals);
+
+    } catch (err) {
+      console.error("Error fetching campaigns:", err);
+      window.notify?.("Failed to load campaigns", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    getCompaigns();
+  }, [getCompaigns]);
+
+  // =========================
+  // TABLE COLUMNS (NO DELETE)
+  // =========================
   const columns = [
     {
       title: "#",
-      key: "index",
-      render: (_, __, index) => index + 1,
+      render: (_, __, i) => i + 1,
     },
+
     {
       title: "Image",
       dataIndex: "imageUrls",
-      key: "imageUrls",
       render: (images) =>
         images?.length ? (
           <Image
             src={images[0]}
-            alt="campaign"
-            width={40}
-            height={40}
+            width={45}
+            height={45}
             style={{ objectFit: "cover", borderRadius: 6 }}
           />
-        ) : (
-          "N/A"
-        ),
+        ) : "N/A"
     },
+
     {
       title: "Title",
       dataIndex: "title",
-      key: "title",
     },
+
     {
       title: "Category",
       dataIndex: "category",
-      key: "category",
     },
+
     {
       title: "Raised",
       dataIndex: "_id",
-      key: "raised",
-      render: (id) => `$${(compaignTotals[id] || 0).toLocaleString()}`,
+      render: (id) =>
+        `$${(compaignTotals[id] || 0).toLocaleString()}`
     },
+
     {
-      title: "Target Amount",
+      title: "Target",
       dataIndex: "amount",
-      key: "amount",
-      render: (amount) => `$${amount.toLocaleString()}`,
+      render: (amount) =>
+        `$${Number(amount || 0).toLocaleString()}`
     },
+
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (status) => {
+        if (!status) return "Active";
+
+        const color =
+          status === "approved"
+            ? "green"
+            : status === "pending"
+              ? "orange"
+              : "red";
+
+        return (
+          <span style={{ color, fontWeight: 500 }}>
+            {status.toUpperCase()}
+          </span>
+        );
+      }
+    },
+
     {
       title: "Actions",
-      key: "actions",
-      render: (_, compaign) => (
+      render: (_, record) => (
         <Space>
+
           <Button
             type="primary"
             size="small"
-            onClick={() => navigate(`/dashboard/compaign/edit/${compaign._id}`)}
+            onClick={() =>
+              navigate(`/dashboard/compaign/edit/${record._id}`)
+            }
           >
-            Edit
+            View / Edit
           </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            onClick={() => handleDelete(compaign)}
-          >
-            Delete
-          </Button>
+
         </Space>
-      ),
-    },
+      )
+    }
   ];
 
+  // =========================
+  // LOADING
+  // =========================
   if (loading) {
     return (
-      <Spin size="large" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", }} />
+      <div style={{
+        display: "flex",
+        height: "70vh",
+        justifyContent: "center",
+        alignItems: "center"
+      }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   return (
     <div className="dashboard-content">
+
       <Row>
+
         <Col span={24}>
-          <Title level={2} className="text-center">
-            Campaigns
+          <Title level={2} style={{ textAlign: "center" }}>
+            My Campaigns
           </Title>
         </Col>
+
         <Col span={24}>
           <Table
             rowKey="_id"
@@ -187,22 +194,23 @@ const AllCompaigns = () => {
             dataSource={compaigns}
             pagination={{ pageSize: 8 }}
             scroll={{ x: "max-content" }}
-            rowClassName={(record) =>
-              record._id === highlightId ? "highlight-row" : ""
-            }
           />
-
         </Col>
-        <Col span={24} className="text-center mt-3 ">
+
+        <Col span={24} style={{ textAlign: "center", marginTop: 20 }}>
           <Button
             type="primary"
             size="large"
-            onClick={() => navigate("/dashboard/compaign/add")}
+            onClick={() =>
+              navigate("/dashboard/compaign/add")
+            }
           >
-            Add Campaign
+            Create New Campaign
           </Button>
         </Col>
+
       </Row>
+
     </div>
   );
 };

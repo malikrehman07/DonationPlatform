@@ -1,57 +1,93 @@
 import React, { useEffect, useState } from "react";
-import { Table, Tag, Typography, Button, Avatar, Spin } from "antd";
+import { Table, Tag, Typography, Button, Avatar, Spin, Tooltip } from "antd";
 import axios from "axios";
 
 const { Title } = Typography;
 
 const Donations = () => {
+
     const [donations, setDonations] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // const handleDelete = async (donation) => {
-    //     const token = localStorage.getItem("token");
-    //     try {
-    //         await axios.delete(`https://backend-theta-silk-38.vercel.app/dashboard/delete/${donation._id}`, {
-    //             headers: { Authorization: `Bearer ${token}` }
-    //         });
-    //         setDonations(prev => prev.filter(d => d._id !== donation._id));
-    //         window.notify("Donation Deleted Successfully", "success");
-    //     } catch (error) {
-    //         console.error("Delete Error:", error);
-    //         window.notify("Error Deleting the Donation", "error");
-    //     }
-    // };
+    // =========================
+    // FETCH DONATIONS
+    // =========================
+    useEffect(() => {
 
+        const fetchDonations = async () => {
+            try {
 
+                const token = localStorage.getItem("token");
 
-    // useEffect(() => {
-    //     const fetchDonations = async () => {
-    //         setLoading(true);
-    //         const token = localStorage.getItem("token");
-    //         try {
-    //             const res = await axios.get('https://backend-theta-silk-38.vercel.app/dashboard/donations', {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`, // ✅ Must be "Bearer <token>"
-    //                 }
-    //             })
-    //             setDonations(res.data.donations)
-    //         } catch (err) {
-    //             console.error("Error fetching donations:", err)
-    //         } finally {
-    //             setLoading(false)
-    //         }
-    //     }
+                const res = await axios.get(
+                    "http://localhost:3000/dashboard/donations",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
 
-    //     fetchDonations()
-    // }, [])
+                setDonations(res.data.donations || []);
 
+            } catch (err) {
+                console.error("Error fetching donations:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDonations();
+
+    }, []);
+
+    // =========================
+    // DELETE (optional)
+    // =========================
+    const handleDelete = async (donation) => {
+        try {
+
+            const token = localStorage.getItem("token");
+
+            await axios.delete(
+                `http://localhost:3000/dashboard/delete/${donation._id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            setDonations(prev =>
+                prev.filter(d => d._id !== donation._id)
+            );
+
+        } catch (error) {
+            console.error("Delete Error:", error);
+        }
+    };
+
+    // =========================
+    // TABLE COLUMNS
+    // =========================
     const columns = [
+
         {
             title: "Donation ID",
-            dataIndex: "_id",   // ✅ Use MongoDB _id
+            dataIndex: "_id",
             key: "_id",
-            render: (id) => <span>{id}</span>,
+            render: (id) => (
+                <Tooltip title={id}>
+                    <span>
+                        {id.slice(0, 6)}...{id.slice(-4)}
+                    </span>
+                </Tooltip>
+            )
         },
+
+        // =========================
+        // DONOR INFO
+        // =========================
         {
             title: "Donor",
             key: "donor",
@@ -59,66 +95,120 @@ const Donations = () => {
                 <div>
                     <strong>{record.fullName}</strong>
                     <br />
-                    {/* <span>{record.email}</span> */}
-                    {/* <span>{record.phoneNo}</span> */}
+                    <small style={{ color: "gray" }}>
+                        {record.email || "No email"}
+                    </small>
                 </div>
-            ),
+            )
         },
+
+        // =========================
+        // CAMPAIGN INFO
+        // =========================
         {
             title: "Campaign",
             key: "campaign",
             render: (_, record) => (
-                <div style={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={record.compaign?.image} shape="square" size={40} />
-                    <span style={{ marginLeft: 10 }}>{record.compaign?.title}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+
+                    <Avatar
+                        src={record.compaign?.image}
+                        shape="square"
+                        size={40}
+                    />
+
+                    <div>
+                        <div style={{ fontWeight: 500 }}>
+                            {record.compaign?.title || "Unknown Campaign"}
+                        </div>
+                    </div>
+
                 </div>
-            ),
+            )
         },
+
+        // =========================
+        // AMOUNT
+        // =========================
         {
-            title: "Total",
+            title: "Amount Received",
             dataIndex: "amount",
             key: "amount",
-            render: (amount) => <strong>${amount.toLocaleString()}</strong>,
+            render: (amount) => (
+                <strong style={{ color: "#1890ff" }}>
+                    $ {Number(amount || 0).toLocaleString()}
+                </strong>
+            )
         },
+
+        // =========================
+        // STATUS
+        // =========================
         {
             title: "Status",
             dataIndex: "status",
             key: "status",
             render: (status) => {
                 let color =
-                    status === "Completed" ? "green" : "red";
+                    status === "Completed"
+                        ? "green"
+                        : status === "Pending"
+                            ? "orange"
+                            : "red";
+
                 return <Tag color={color}>{status}</Tag>;
-            },
+            }
         },
+
+        // =========================
+        // ACTIONS
+        // =========================
         {
             title: "Action",
             key: "action",
             render: (_, donation) => (
-                <Button danger type="link" onClick={() => handleDelete(donation)}>
+                <Button
+                    danger
+                    type="link"
+                    onClick={() => handleDelete(donation)}
+                >
                     Delete
                 </Button>
-            ),
-        },
+            )
+        }
     ];
 
-
+    // =========================
+    // LOADING STATE
+    // =========================
     if (loading) {
         return (
-            <Spin size="large" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", }} />
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "70vh"
+            }}>
+                <Spin size="large" />
+            </div>
         );
     }
 
+    // =========================
+    // UI
+    // =========================
     return (
         <div className="dashboard-content">
+
             <Title level={2} className="text-center">
-                Donations
+                Donations Received
             </Title>
+
             <Table
-                rowKey="_id"   // ✅ Important
+                rowKey="_id"
                 columns={columns}
                 dataSource={donations}
-                loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 6 }}
                 scroll={{ x: "max-content" }}
             />
 

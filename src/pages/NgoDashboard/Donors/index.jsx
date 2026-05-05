@@ -1,80 +1,153 @@
 import React, { useEffect, useState } from 'react';
-import { Col, Row, Spin, Typography, Table } from 'antd';
+import { Col, Row, Spin, Typography, Table, Tag } from 'antd';
 import { useAuthContext } from '../../../context/Auth';
 import axios from 'axios';
 
 const { Title } = Typography;
 
 const Donors = () => {
+
   const { user } = useAuthContext();
+
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-//   useEffect(() => {
-//     const fetchDonations = async () => {
-//       const token = localStorage.getItem("token");
-//       try {
-//         const res = await axios.get("https://backend-theta-silk-38.vercel.app/dashboard/donations", {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//         setDonations(res.data.donations || []);
-//       } catch (err) {
-//         console.error("Error fetching donations:", err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+  // =========================
+  // FETCH DONORS
+  // =========================
+  useEffect(() => {
 
-//     fetchDonations();
-//   }, []);
+    const fetchDonations = async () => {
+      try {
 
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(
+          "http://localhost:3000/dashboard/donations",
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        setDonations(res.data.donations || []);
+
+      } catch (err) {
+        console.error("Error fetching donors:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDonations();
+
+  }, []);
+
+  // =========================
+  // TABLE COLUMNS
+  // =========================
   const columns = [
+
     {
-      title: "Name",
-      dataIndex: "fullName",
+      title: "Donor Name",
       key: "fullName",
+      render: (_, record) => (
+        record.isAnonymous
+          ? <Tag color="default">Anonymous</Tag>
+          : record.fullName || "Anonymous"
+      )
     },
+
     {
       title: "Email",
-      dataIndex: "email",
       key: "email",
+      render: (_, record) => (
+        record.isAnonymous
+          ? "Hidden"
+          : record.email || "-"
+      )
     },
+
     {
-      title: "Phone No",
-      dataIndex: "phoneNo",
+      title: "Phone",
       key: "phoneNo",
+      render: (_, record) => (
+        record.isAnonymous
+          ? "Hidden"
+          : record.phoneNo || "-"
+      )
     },
-    {
-      title: "Address",
-      dataIndex: "address",
-      key: "address",
-    },
+
     {
       title: "City",
-      dataIndex: "city",
       key: "city",
+      render: (_, record) => (
+        record.isAnonymous
+          ? "Hidden"
+          : record.city || "-"
+      )
     },
+
     {
-      title: "Postal Code",
-      dataIndex: "postalCode",
-      key: "postalCode",
+      title: "Campaign",
+      key: "campaign",
+      render: (_, record) => (
+        record.compaign?.title || "Unknown Campaign"
+      )
     },
+
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      key: "amount",
+      render: (amount) => (
+        <b>${Number(amount || 0).toLocaleString()}</b>
+      )
+    },
+
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const color =
+          status === "Completed"
+            ? "green"
+            : status === "Pending"
+              ? "orange"
+              : "red";
+
+        return <Tag color={color}>{status}</Tag>;
+      }
+    }
+
   ];
 
-
+  // =========================
+  // LOADING STATE
+  // =========================
   if (loading) {
     return (
-      <Spin size="large" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", }} />
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "70vh"
+      }}>
+        <Spin size="large" />
+      </div>
     );
   }
+
   return (
     <div className="dashboard-content">
+
       <Row>
         <Col span={24}>
           <Title level={2} className="text-center">
-            Donors
+            NGO Donors List
           </Title>
         </Col>
+
         <Col span={24}>
           <Table
             rowKey="_id"
@@ -85,6 +158,7 @@ const Donors = () => {
           />
         </Col>
       </Row>
+
     </div>
   );
 };

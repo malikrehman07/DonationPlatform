@@ -1,9 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Form, Input, Button, Select, Upload, Row, Col } from 'antd';
+import {
+  Typography,
+  Form,
+  Input,
+  Button,
+  Select,
+  Upload,
+  Row,
+  Col,
+  Spin
+} from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-// import { supabase } from '../../../../config/supabase';
-// import axios from 'axios';
+import axios from 'axios';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -11,157 +20,202 @@ const { Option } = Select;
 const EditCompaign = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  // =========================
+  // FETCH CAMPAIGN
+  // =========================
+  const fetchCompaign = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-  // const fetchCompaigns = async () => {
-  //   try {
-  //     const res = await axios.get(`https://backend-theta-silk-38.vercel.app/compaigns/read/${id}`);
-  //     const data = res.data.compaign;
-  //     form.setFieldsValue(data);
+      const res = await axios.get(
+        `http://localhost:3000/compaigns/read/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
-  //     if (data.imageUrls?.length) {
-  //       const previewList = data.imageUrls.map((url, index) => ({
-  //         uid: `${index}`,
-  //         name: `image-${index + 1}`,
-  //         status: 'done',
-  //         url,
-  //       }));
-  //       setFileList(previewList);
-  //     }
-  //   } catch (err) {
-  //     console.error("Fetch error:", err);
-  //     window.notify("Failed to fetch Compaign", "error");
-  //     navigate("/dashboard/compaign/all");
-  //   }
-  // };
+      const data = res.data.compaign;
 
-  // const handleRemove = async (file) => {
-  //   try {
-  //     const url = file.url || file.response?.url;
-  //     if (!url) return;
+      form.setFieldsValue({
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        amount: data.amount
+      });
 
-  //     const path = new URL(url).pathname.split("/storage/v1/object/public/Compaign/")[1];
+      // preview images
+      if (data.imageUrls?.length) {
+        const previews = data.imageUrls.map((url, i) => ({
+          uid: `${i}`,
+          name: `image-${i}`,
+          status: "done",
+          url
+        }));
 
-  //     if (path) {
-  //       const { error } = await supabase.storage.from("Compaign").remove([path]);
-  //       if (error) {
-  //         console.error("Failed to delete from Supabase:", error.message);
-  //         window.notify("Failed to delete image", "error");
-  //       } else {
-  //         window.notify("Image removed from Supabase", "success");
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error("Remove error:", err);
-  //   }
-  // };
+        setFileList(previews);
+      }
 
+    } catch (err) {
+      console.error(err);
+      window.notify?.("Failed to load campaign", "error");
+      navigate("/dashboard/compaign/all");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchCompaign();
+  }, [id]);
 
-  // const handleUpdate = async () => {
-  //   try {
-  //     const values = await form.validateFields();
-  //     setIsProcessing(true);
+  // =========================
+  // HANDLE FILE CHANGE
+  // =========================
+  const handleUploadChange = ({ fileList }) => {
+    setFileList(fileList);
+  };
 
-  //     let imageUrls = [];
+  // =========================
+  // UPDATE CAMPAIGN
+  // =========================
+  const handleUpdate = async () => {
+    try {
+      setIsProcessing(true);
 
-  //     for (let fileObj of fileList) {
-  //       const file = fileObj.originFileObj;
+      const values = await form.validateFields();
+      const token = localStorage.getItem("token");
 
-  //       if (!file) {
-  //         if (fileObj.url) imageUrls.push(fileObj.url);
-  //         continue;
-  //       }
-  //       const fileExt = file.name?.split('.').pop();
-  //       const filePath = `compaigns/${id}/${Date.now()}.${fileExt}`;
-  //       const { error: uploadError } = await supabase.storage
-  //         .from('GiveHope')
-  //         .upload(filePath, file);
+      const formData = new FormData();
 
-  //       if (uploadError) {
-  //         console.warn("Upload error:", uploadError);
-  //         continue;
-  //       }
+      formData.append("title", values.title);
+      formData.append("description", values.description);
+      formData.append("category", values.category);
+      formData.append("amount", values.amount);
 
-  //       const { data: publicUrlData } = supabase.storage
-  //         .from("GiveHope")
-  //         .getPublicUrl(filePath);
-  //       imageUrls.push(publicUrlData?.publicUrl);
-  //     }
+      // keep existing images + new ones
+      fileList.forEach((file) => {
+        if (file.originFileObj) {
+          formData.append("images", file.originFileObj);
+        } else {
+          formData.append("existingImages", file.url);
+        }
+      });
 
-  //     const token = localStorage.getItem("token");
+      await axios.put(
+        `http://localhost:3000/compaigns/update/${id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
 
-  //     await axios.put(`https://backend-theta-silk-38.vercel.app/compaigns/update/${id}`, {
-  //       ...values,
-  //       imageUrls,
-  //     }, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`
-  //       }
-  //     });
+      window.notify?.("Campaign updated successfully", "success");
+      navigate("/dashboard/compaign/all");
 
-  //     window.notify("Compaign updated successfully!", "success");
-  //     navigate("/dashboard/compaign/all");
-  //   } catch (err) {
-  //     if (err.response) {
-  //       console.error("Server error:", err.response.data);
-  //       window.notify(err.response.data.message || "Server Error", "error");
-  //     } else {
-  //       console.error("Client error:", err.message);
-  //       window.notify("Network or client error", "error");
-  //     }
+    } catch (err) {
+      console.error(err);
+      window.notify?.("Update failed", "error");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // }
-
-  // useEffect(() => {
-  //   fetchCompaigns();
-  // }, [id]);
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "20%" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content">
-      <Title level={3}>Edit Compaign</Title>
-      <Form layout="vertical" form={form} >
-        <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Please enter compaign title' }]}>
-          <Input />
+      <Title level={3}>Edit Campaign</Title>
+
+      <Form layout="vertical" form={form}>
+
+        <Form.Item
+          name="title"
+          label="Title"
+          rules={[{ required: true }]}
+        >
+          <Input placeholder="Campaign title" />
         </Form.Item>
-        <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Please enter compaign description' }]}>
+
+        <Form.Item
+          name="description"
+          label="Description"
+          rules={[{ required: true }]}
+        >
           <Input.TextArea rows={4} />
         </Form.Item>
-        <Row gutter={24} align="middle" className='mb-3'>
-          <Col xs={24} sm={24} md={12} lg={12}>
-            <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Please select a category' }]}>
+
+        <Row gutter={24}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="category"
+              label="Category"
+              rules={[{ required: true }]}
+            >
               <Select>
-                <Option value="health">health</Option>
-                <Option value="education">education</Option>
-                <Option value="disaster">disaster</Option>
-                <Option value="other">other</Option>
+                <Option value="health">Health</Option>
+                <Option value="education">Education</Option>
+                <Option value="disaster">Disaster</Option>
+                <Option value="other">Other</Option>
               </Select>
             </Form.Item>
           </Col>
-          <Col xs={24} sm={24} md={12} lg={12}>
-            <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Please enter compaign amount' }]}>
-              <Input />
+
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="amount"
+              label="Target Amount"
+              rules={[{ required: true }]}
+            >
+              <Input type="number" />
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item label="Upload New Images (optional)">
-          <Upload beforeUpload={() => false} listType="picture" fileList={fileList} onChange={({ fileList }) => setFileList([...fileList])} onRemove={handleRemove} maxCount={2}>
-            <Button icon={<UploadOutlined />}>Upload</Button>
+
+        {/* =========================
+            IMAGES (Cloudinary via backend)
+        ========================= */}
+        <Form.Item label="Images">
+          <Upload
+            listType="picture"
+            beforeUpload={() => false}
+            fileList={fileList}
+            onChange={handleUploadChange}
+            maxCount={3}
+          >
+            <Button icon={<UploadOutlined />}>
+              Upload Images
+            </Button>
           </Upload>
         </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" onClick={handleUpdate} htmlType='submit' color='default' variant='solid' loading={isProcessing}>Update Compaign</Button>
-        </Form.Item>
+        <Button
+          type="primary"
+          loading={isProcessing}
+          onClick={handleUpdate}
+        >
+          Update Campaign
+        </Button>
+
       </Form>
     </div>
-  )
+  );
 };
 
 export default EditCompaign;

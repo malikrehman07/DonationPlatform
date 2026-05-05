@@ -1,12 +1,21 @@
 import react from 'react'
 import Routes from './pages/Routes'
 import './App.scss'
+import { ConfigProvider } from 'antd'
+import { useAuthContext } from './context/Auth'
+import ScreenLoader from './components/ScreenLoader'
 
 function App() {
 
+  const { isAppLoading } = useAuthContext();
   return (
     <>
-      <Routes/>
+      <ConfigProvider theme={{ token: { colorPrimary: '#07887f' } }}>
+        {isAppLoading
+          ? <ScreenLoader />
+          : <Routes />
+        }
+      </ConfigProvider>
     </>
   )
 }
