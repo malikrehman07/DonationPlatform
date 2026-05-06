@@ -6,6 +6,7 @@ import { useAuthContext } from '../context/Auth'
 import DonorDashboard from './DonorDashboard'
 import Admin from './Admin'
 import NgoDashboard from './NgoDashboard'
+import PrivateRoute from '../components/PrivateRoute'
 
 const Index = () => {
   const { user, isAuth } = useAuthContext()

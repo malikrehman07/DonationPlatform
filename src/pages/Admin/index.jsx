@@ -6,7 +6,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { Link, Routes, Route, Outlet, useLocation } from 'react-router-dom';
-import NGOs from './NGOs';
+import NGOs from './NGOS';
 import { useAuthContext } from '../../context/Auth';
 
 const { Header, Sider, Content } = Layout;

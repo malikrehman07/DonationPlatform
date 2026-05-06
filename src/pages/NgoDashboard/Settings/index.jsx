@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Form, Input, Button, Upload, Typography, message, Card } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
-import { useAuthContext } from "../../context/Auth";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../../../context/Auth";
 
 const { Title } = Typography;
 
