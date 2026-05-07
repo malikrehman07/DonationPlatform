@@ -89,7 +89,7 @@ const NgoDashboard = () => {
             setLoading(true);
             try {
                 const res = await axios.get(
-                    `http://localhost:3000/compaigns/search?query=${searchQuery}`
+                    `http://localhost:5000/compaigns/search?query=${searchQuery}`
                 );
                 setResults(res.data.compaigns || []);
             } catch (err) {

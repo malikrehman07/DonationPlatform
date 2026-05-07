@@ -26,7 +26,7 @@ const Settings = () => {
         data.append("upload_preset", "givehope_uploads"); // your preset
 
         const res = await axios.post(
-            "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
+            // "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
             data
         );
 
