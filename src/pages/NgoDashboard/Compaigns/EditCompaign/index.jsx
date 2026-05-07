@@ -34,7 +34,7 @@ const EditCompaign = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        `http://localhost:3000/compaigns/read/${id}`,
+        `http://localhost:5000/compaigns/read/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -110,7 +110,7 @@ const EditCompaign = () => {
       });
 
       await axios.put(
-        `http://localhost:3000/compaigns/update/${id}`,
+        `http://localhost:5000/compaigns/update/${id}`,
         formData,
         {
           headers: {

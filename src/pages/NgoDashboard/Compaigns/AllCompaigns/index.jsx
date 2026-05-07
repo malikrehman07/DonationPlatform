@@ -27,14 +27,14 @@ const AllCompaigns = () => {
 
       const [compRes, donRes] = await Promise.all([
         axios.get(
-          `http://localhost:3000/compaigns/my/${user.uid}`,
+          `http://localhost:5000/compaigns/my/${user.uid}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         ),
 
         axios.get(
-          `http://localhost:3000/dashboard/donations`,
+          `http://localhost:5000/dashboard/donations`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }

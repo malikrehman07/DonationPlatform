@@ -138,7 +138,7 @@ const AddCompaign = () => {
             };
 
             await axios.post(
-                "http://localhost:3000/compaigns/add",
+                "http://localhost:5000/compaigns/add",
                 compaignData,
                 {
                     headers: {
