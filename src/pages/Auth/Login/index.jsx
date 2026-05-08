@@ -24,7 +24,7 @@ const Login = () => {
         }
         setIsProcessing(true)
         try {
-            const res = await axios.post("http://localhost:3000/auth/login", { email, password })
+            const res = await axios.post("http://localhost:5000/auth/login", { email, password })
             localStorage.setItem("token", res.data.token)
             console.log('token', res.data.token)
 

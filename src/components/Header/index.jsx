@@ -1,38 +1,56 @@
-import { Button } from 'antd'
+import { Button, Space } from 'antd'
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuthContext } from '../../context/Auth'
+import { UserOutlined } from '@ant-design/icons';
 
 const Header = () => {
+    const { isAuth, user } = useAuthContext()
     return (
-        <header>
-            <nav className="navbar navbar-expand-lg bg-body-tertiary">
-                <div className="container">
-                    <Link className="navbar-brand" to="/">GiveHope</Link>
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
-                    <div className="collapse navbar-collapse" id="navbarSupportedContent">
-                        <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
-                            <li className="nav-item">
-                                <Link className="nav-link active" aria-current="page" to="/">Home</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link active" aria-current="page" to="/compaigns">Compaigns</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link active" aria-current="page" to="/about">About</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link active" aria-current="page" to="/contact">Contact</Link>
-                            </li>
-                        </ul>
-                        <div>
-                            <Link to="/auth/login" ><Button variant='solid' color='default'>Login</Button></Link>
-                        </div>
+        <nav className="navbar navbar-expand-lg bg-primary navbar-dark">
+            <div className="container">
+                <Link to='/' className="navbar-brand"><b>Give</b>Hope</Link>
+                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon"></span>
+                </button>
+                <div className="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
+                        <li className="nav-item">
+                            <Link to="/" className="nav-link active" aria-current="page">Home</Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to="/compaigns" className="nav-link active" aria-current="page">Compaign</Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to="/about" className="nav-link active" aria-current="page">About</Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to="/contact" className="nav-link active" aria-current="page">Contact</Link>
+                        </li>
+                    </ul>
+                    <div>
+                        {!isAuth ? (
+                            <Link to="/auth/login">
+                                <UserOutlined style={{ fontSize: 22, color: "white" }} />
+                            </Link>
+                        ) : user?.role === "ngo" ? (
+                            <Link to="/dashboard/overview">
+                                <UserOutlined style={{ fontSize: 22, color: "white" }} />
+                            </Link>
+                        ) : user?.role === "admin" ? (
+                            <Link to="/admin/ngos">
+                                <UserOutlined style={{ fontSize: 22, color: "white" }} />
+                            </Link>
+                        ) : (
+                            <Link to="/auth/login">
+                                <UserOutlined style={{ fontSize: 22, color: "white" }} />
+                            </Link>
+                        )}
                     </div>
                 </div>
-            </nav>
-        </header>
+            </div>
+        </nav>
     )
 }
+
 export default Header

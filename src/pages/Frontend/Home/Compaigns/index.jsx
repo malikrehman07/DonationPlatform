@@ -20,7 +20,7 @@ const Compaigns = () => {
         try {
             setLoading(true);
 
-            const res = await axios.get("http://localhost:3000/compaigns");
+            const res = await axios.get("http://localhost:5000/compaigns");
 
             setCompaigns(res.data || []);
         } catch (err) {

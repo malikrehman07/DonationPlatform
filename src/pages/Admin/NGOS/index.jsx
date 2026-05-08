@@ -46,7 +46,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        `http://localhost:3000/admin/ngos`,
+        `http://localhost:5000/admin/ngos`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -112,7 +112,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:3000/admin/ngos/approve/${id}`,
+        `http://localhost:5000/admin/ngos/approve/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -136,7 +136,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:3000/admin/ngos/reject/${id}`,
+        `http://localhost:5000/admin/ngos/reject/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

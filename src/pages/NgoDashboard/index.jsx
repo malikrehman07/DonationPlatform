@@ -51,12 +51,12 @@ const NgoDashboard = () => {
 
                 // ❌ not completed profile → force settings
                 if (!user.organizationCompleted) {
-                    navigate("/ngo/settings");
+                    navigate("/dashboard/settings");
                 }
 
                 // ❌ rejected NGO → block access
                 if (user.status === "rejected") {
-                    navigate("/ngo/settings");
+                    navigate("/dashboard/settings");
                 }
             }
         }

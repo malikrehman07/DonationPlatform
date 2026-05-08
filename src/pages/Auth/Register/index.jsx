@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../../context/Auth'
 
-const initialState = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: '' }
+// const initialState = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: '' }
+const initialState = { firstName: '', lastName: '', email: '', password: '', confirmPassword: ''}
 const Register = () => {
     const { Paragraph } = Typography
     const [state, setState] = useState(initialState)
@@ -13,7 +14,7 @@ const Register = () => {
     const handleChange = (e) => setState(s => ({ ...s, [e.target.name]: e.target.value }))
     const handleSubmit = async (e) => {
         e.preventDefault()
-        let { firstName, lastName, email, password, confirmPassword, role } = state;
+        let { firstName, lastName, email, password, confirmPassword } = state;
         if (firstName.length < 3) {
             return window.notify("Please Enter Your First Name Correctly", "error")
         }
@@ -23,19 +24,19 @@ const Register = () => {
         if (!window.isEmail(email)) {
             return window.notify("Please Enter Your Email Correctly", "error")
         }
-        if (!role) {
-            return window.notify("Please Select Your Role", "error")
-        }
+        // if (!role) {
+        //     return window.notify("Please Select Your Role", "error")
+        // }
         if (password.length < 8) {
             return window.notify("Password must be atleast of 8 characters", "error")
         }
         if (confirmPassword !== password) {
             return window.notify("Password doesn't match", "error")
         }
-        let userData = { firstName, lastName, email, password, role }
+        let userData = { firstName, lastName, email, password }
         setIsProcessing(true)
         try {
-            const res = await axios.post("http://localhost:3000/auth/register", userData)
+            const res = await axios.post("http://localhost:5000/auth/register", userData)
             const token = res.data.token;
 
             localStorage.setItem("token", token)
@@ -70,14 +71,14 @@ const Register = () => {
                                     <Input type='email' placeholder='Enter Your Email' name='email' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                            <Col span={24}>
+                            {/* <Col span={24}>
                                 <Form.Item label="Role" required>
                                     <Select name="role" value={state.role} onChange={(value) => setState((prev) => ({ ...prev, role: value }))}>
-                                        {/* <Select.Option value="NGO">NGO</Select.Option> */}
+                                        <Select.Option value="NGO">NGO</Select.Option>
                                         <Select.Option value="Donor">Donor</Select.Option>
                                     </Select>
                                 </Form.Item>
-                            </Col>
+                            </Col> */}
                             <Col span={24} >
                                 <Form.Item label="Password" required >
                                     <Input.Password placeholder='Enter Your Password' name='password' onChange={handleChange} />
