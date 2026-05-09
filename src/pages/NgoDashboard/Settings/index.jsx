@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Form, Input, Button, Upload, Typography, message, Card } from "antd";
+import React, { useEffect, useState } from "react";
+import { Form, Input, Button, Upload, Typography, message, Card, Alert } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -14,175 +14,231 @@ const Settings = () => {
 
     const [loading, setLoading] = useState(false);
     const [fileList, setFileList] = useState([]);
-
     const [form] = Form.useForm();
 
-    // =========================
-    // CLOUDINARY UPLOAD
-    // =========================
-    const uploadToCloudinary = async (file) => {
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "givehope_uploads"); // your preset
+    const [latestUser, setLatestUser] = useState(null);
 
-        const res = await axios.post(
-            "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
-            data
-        );
+    // =========================
+    // FETCH LATEST USER (IMPORTANT FIX)
+    // =========================
+    useEffect(() => {
 
-        return {
-            url: res.data.secure_url,
-            public_id: res.data.public_id
+        const fetchUser = async () => {
+            try {
+
+                const token = localStorage.getItem("token");
+
+                const res = await axios.get(
+                    "http://localhost:5000/auth/user",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                setLatestUser(res.data.user);
+
+            } catch (err) {
+                console.error("User fetch error:", err);
+            }
         };
-    };
+
+        fetchUser();
+
+    }, []);
+
+    const currentUser = latestUser || user;
+    const status = currentUser?.status || "under_review";
 
     // =========================
-    // SUBMIT SETTINGS
+    // STATUS RULES
+    // =========================
+    const isEditable =
+        status === "rejected" || status === "under_review";
+
+    const isLocked =
+        status === "approved" || status === "suspended";
+
+    // =========================
+    // LOAD DATA INTO FORM
+    // =========================
+    useEffect(() => {
+
+        if (currentUser?.organization) {
+
+            form.setFieldsValue({
+                name: currentUser.organization.name,
+                registrationNumber: currentUser.organization.registrationNumber,
+                address: currentUser.organization.address,
+                phone: currentUser.organization.phone,
+                website: currentUser.organization.website,
+                description: currentUser.organization.description,
+            });
+        }
+
+        if (currentUser?.documents) {
+            setFileList(
+                currentUser.documents.map((doc, i) => ({
+                    uid: i,
+                    url: doc.url,
+                    name: `doc-${i}`,
+                    status: "done",
+                }))
+            );
+        }
+
+    }, [currentUser]);
+
+    // =========================
+    // SUBMIT → under_review
     // =========================
     const handleSubmit = async (values) => {
+
         try {
             setLoading(true);
 
             if (!fileList.length) {
-                return message.error("Please upload at least one document");
+                return message.error("Upload at least one document");
             }
 
-            // upload all documents to cloudinary
-            const uploadedDocs = [];
+            const formData = new FormData();
 
-            for (const fileObj of fileList) {
-                const uploaded = await uploadToCloudinary(fileObj.originFileObj);
-                uploadedDocs.push({
-                    type: "official_document",
-                    url: uploaded.url,
-                    public_id: uploaded.public_id
-                });
-            }
+            fileList.forEach((file) => {
+                if (file.originFileObj) {
+                    formData.append("documents", file.originFileObj);
+                }
+            });
 
-            const payload = {
-                organization: {
-                    name: values.name,
-                    registrationNumber: values.registrationNumber,
-                    address: values.address,
-                    phone: values.phone,
-                    website: values.website,
-                    description: values.description
-                },
-                documents: uploadedDocs,
-                status: "pending",
-                organizationCompleted: true
-            };
+            formData.append("name", values.name);
+            formData.append("registrationNumber", values.registrationNumber);
+            formData.append("address", values.address);
+            formData.append("phone", values.phone);
+            formData.append("website", values.website || "");
+            formData.append("description", values.description);
+
+            // 🔥 STATUS CHANGE (NO PENDING ANYMORE)
+            formData.append("status", "under_review");
 
             await axios.put(
-                `http://localhost:5000/ngo/settings/${user._id}`,
-                payload
+                `http://localhost:5000/ngo/settings/${currentUser._id}`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                }
             );
 
-            message.success("Profile submitted for verification");
+            message.success("Submitted for verification");
 
-            // refresh auth profile so dashboard guard updates
             await readProfile();
-
             navigate("/dashboard/overview");
 
         } catch (err) {
             console.error(err);
-            message.error("Failed to submit settings");
+            message.error("Submission failed");
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="container py-5">
+    // =========================
+    // STATUS UI
+    // =========================
+    const renderStatus = () => {
 
-            <Card style={{ maxWidth: 700, margin: "auto" }}>
+        switch (status) {
+
+            case "under_review":
+                return <Alert type="warning" message="Under review by admin" showIcon />;
+
+            case "approved":
+                return <Alert type="success" message="Approved (Locked)" showIcon />;
+
+            case "rejected":
+                return <Alert type="error" message="Rejected - You can update and resubmit" showIcon />;
+
+            case "suspended":
+                return <Alert type="error" message="Account Suspended" showIcon />;
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="container">
+
+            <Card>
 
                 <Title level={3} className="text-center">
-                    NGO Organization Settings
+                    NGO Settings
                 </Title>
 
-                <p style={{ textAlign: "center", color: "gray" }}>
-                    Complete your profile to get verified
-                </p>
+                {renderStatus()}
 
                 <Form
                     layout="vertical"
                     form={form}
                     onFinish={handleSubmit}
+                    disabled={isLocked}   // 🔒 HARD LOCK
                 >
 
-                    <Form.Item
-                        label="Organization Name"
-                        name="name"
-                        rules={[{ required: true }]}
-                    >
-                        <Input placeholder="Enter organization name" />
+                    <Form.Item label="Organization Name" name="name" rules={[{ required: true }]}>
+                        <Input />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Registration Number"
-                        name="registrationNumber"
-                        rules={[{ required: true }]}
-                    >
-                        <Input placeholder="NGO registration number" />
+                    <Form.Item label="Registration Number" name="registrationNumber" rules={[{ required: true }]}>
+                        <Input />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Address"
-                        name="address"
-                        rules={[{ required: true }]}
-                    >
-                        <Input placeholder="Organization address" />
+                    <Form.Item label="Address" name="address" rules={[{ required: true }]}>
+                        <Input />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Phone"
-                        name="phone"
-                        rules={[{ required: true }]}
-                    >
-                        <Input placeholder="Contact number" />
+                    <Form.Item label="Phone" name="phone" rules={[{ required: true }]}>
+                        <Input />
                     </Form.Item>
 
                     <Form.Item label="Website" name="website">
-                        <Input placeholder="Optional website URL" />
+                        <Input />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Description"
-                        name="description"
-                        rules={[{ required: true }]}
-                    >
-                        <Input.TextArea rows={4} placeholder="About your NGO" />
+                    <Form.Item label="Description" name="description">
+                        <Input.TextArea rows={4} />
                     </Form.Item>
 
-                    {/* ========================= */}
-                    {/* DOCUMENT UPLOAD */}
-                    {/* ========================= */}
-                    <Form.Item label="Upload Official Documents (PDF/Image)">
+                    {/* FILES */}
+                    <Form.Item label="Documents">
                         <Upload
                             multiple
                             beforeUpload={() => false}
                             fileList={fileList}
                             onChange={({ fileList }) => setFileList(fileList)}
+                            disabled={isLocked}
                         >
-                            <Button icon={<UploadOutlined />}>
+                            <Button icon={<UploadOutlined />} disabled={isLocked}>
                                 Upload Documents
                             </Button>
                         </Upload>
                     </Form.Item>
 
-                    <Button
-                        type="primary"
-                        htmlType="submit"
-                        loading={loading}
-                        block
-                        size="large"
-                    >
-                        Submit for Verification
-                    </Button>
+                    {/* BUTTON LOGIC */}
+                    {isEditable && (
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={loading}
+                            block
+                        >
+                            Submit for Verification
+                        </Button>
+                    )}
 
                 </Form>
+
             </Card>
         </div>
     );

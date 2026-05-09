@@ -30,15 +30,15 @@ const Header = () => {
                     </ul>
                     <div>
                         {!isAuth ? (
-                            <Link to="/auth/login">
+                            <Link to="/auth/register">
                                 <UserOutlined style={{ fontSize: 22, color: "white" }} />
                             </Link>
                         ) : user?.role === "ngo" ? (
                             <Link to="/dashboard/overview">
                                 <UserOutlined style={{ fontSize: 22, color: "white" }} />
                             </Link>
-                        ) : user?.role === "admin" ? (
-                            <Link to="/admin/ngos">
+                        ) : user?.role === "Admin" ? (
+                            <Link to="/admin/overview">
                                 <UserOutlined style={{ fontSize: 22, color: "white" }} />
                             </Link>
                         ) : (

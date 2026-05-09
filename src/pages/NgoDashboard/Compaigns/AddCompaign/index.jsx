@@ -67,7 +67,7 @@ const AddCompaign = () => {
             return false;
         }
 
-        if (user.role === "ngo" && user.status !== "verified") {
+        if (user.role === "Ngo" && user.status !== "verified") {
             message.error("Your NGO is not verified yet");
             return false;
         }

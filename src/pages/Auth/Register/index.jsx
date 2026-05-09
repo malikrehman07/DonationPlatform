@@ -1,102 +1,280 @@
-import { Button, Col, Form, Input, Row, Select, Typography } from 'antd'
+import { Button, Col, Form, Input, Row, Select, Typography, Upload } from 'antd'
+import { UploadOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../../context/Auth'
 
-// const initialState = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: '' }
-const initialState = { firstName: '', lastName: '', email: '', password: '', confirmPassword: ''}
+const initialState = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: ''
+}
+
 const Register = () => {
+
     const { Paragraph } = Typography
     const [state, setState] = useState(initialState)
+    const [fileList, setFileList] = useState([])
     const [isProcessing, setIsProcessing] = useState(false)
-    const { isAuth, dispatch } = useAuthContext();
-    const handleChange = (e) => setState(s => ({ ...s, [e.target.name]: e.target.value }))
+
+    const { dispatch } = useAuthContext()
+
+    const handleChange = (e) =>
+        setState(s => ({ ...s, [e.target.name]: e.target.value }))
+
+    const isNgo = state.role === "ngo"
+
+    // =========================
+    // SUBMIT
+    // =========================
     const handleSubmit = async (e) => {
         e.preventDefault()
-        let { firstName, lastName, email, password, confirmPassword } = state;
-        if (firstName.length < 3) {
-            return window.notify("Please Enter Your First Name Correctly", "error")
-        }
-        if (lastName.length < 3) {
-            return window.notify("Please Enter Your Last Name Correctly", "error")
-        }
-        if (!window.isEmail(email)) {
-            return window.notify("Please Enter Your Email Correctly", "error")
-        }
-        // if (!role) {
-        //     return window.notify("Please Select Your Role", "error")
-        // }
-        if (password.length < 8) {
-            return window.notify("Password must be atleast of 8 characters", "error")
-        }
-        if (confirmPassword !== password) {
-            return window.notify("Password doesn't match", "error")
-        }
-        let userData = { firstName, lastName, email, password }
-        setIsProcessing(true)
-        try {
-            const res = await axios.post("http://localhost:5000/auth/register", userData)
-            const token = res.data.token;
 
+        const {
+            firstName,
+            lastName,
+            email,
+            password,
+            confirmPassword,
+            role,
+        } = state
+
+        // =========================
+        // VALIDATION
+        // =========================
+        if (password !== confirmPassword)
+            return window.notify("Passwords do not match", "error")
+
+        if (!role)
+            return window.notify("Select role", "error")
+
+        // =========================
+        // FORM DATA (IMPORTANT FOR FILES)
+        // =========================
+        const formData = new FormData()
+
+        formData.append("firstName", firstName)
+        formData.append("lastName", lastName)
+        formData.append("email", email)
+        formData.append("password", password)
+        formData.append("role", role)
+
+        // =========================
+        // NGO EXTRA DATA
+        // =========================
+        if (isNgo) {
+
+            formData.append("organizationName", state.organizationName)
+            formData.append("registrationNumber", state.registrationNumber)
+            formData.append("address", state.address)
+            formData.append("phone", state.phone)
+            formData.append("website", state.website)
+            formData.append("description", state.description)
+
+            // FILE UPLOADS
+            fileList.forEach(file => {
+                formData.append("documents", file.originFileObj)
+            })
+        }
+
+        setIsProcessing(true)
+
+        try {
+
+            const res = await axios.post(
+                "http://localhost:5000/auth/register",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    }
+                }
+            )
+
+            const token = res.data.token
             localStorage.setItem("token", token)
 
-            dispatch((s) => ({ ...s, isAuth: true, user: res.data.user }))
-            window.notify(res.data.message || "Registered Successfully", "success")
+            dispatch((s) => ({
+                ...s,
+                isAuth: true,
+                user: res.data.user
+            }))
+
+            window.notify("Registered Successfully", "success")
+
         } catch (error) {
-            console.log('error', error)
-            window.notify(error.response?.data?.message || "Registered Failed", "error")
+            window.notify(
+                error.response?.data?.message || "Registration failed",
+                "error"
+            )
         } finally {
-            setIsProcessing(false);
+            setIsProcessing(false)
         }
     }
+
     return (
         <main className="auth p-3 p-md-4 p-lg-5">
             <div className='container'>
-                <div className="card p-3 p-md-4 ">
-                    <Form layout='vertical' >
-                        <Row gutter={[16]} >
-                            <Col xs={24} sm={24} md={12} lg={12} >
-                                <Form.Item label="First Name" required >
-                                    <Input type='text' placeholder='Enter Your First Name' name='firstName' onChange={handleChange} />
+                <div className="card p-3 p-md-4">
+
+                    <Form layout='vertical'>
+
+                        <Row gutter={[16]}>
+
+                            {/* FIRST NAME */}
+                            <Col xs={24} md={12}>
+                                <Form.Item required label="First Name">
+                                    <Input name='firstName' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                            <Col xs={24} sm={24} md={12} lg={12} >
-                                <Form.Item label="Last Name" required >
-                                    <Input type='text' placeholder='Enter Your Last Name' name='lastName' onChange={handleChange} />
+
+                            {/* LAST NAME */}
+                            <Col xs={24} md={12}>
+                                <Form.Item required label="Last Name">
+                                    <Input name='lastName' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                            <Col span={24} >
-                                <Form.Item label="Email" required >
-                                    <Input type='email' placeholder='Enter Your Email' name='email' onChange={handleChange} />
+
+                            {/* EMAIL */}
+                            <Col span={24}>
+                                <Form.Item required label="Email">
+                                    <Input name='email' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                            {/* <Col span={24}>
-                                <Form.Item label="Role" required>
-                                    <Select name="role" value={state.role} onChange={(value) => setState((prev) => ({ ...prev, role: value }))}>
-                                        <Select.Option value="NGO">NGO</Select.Option>
-                                        <Select.Option value="Donor">Donor</Select.Option>
+
+                            {/* ROLE */}
+                            <Col span={24}>
+                                <Form.Item required label="Role">
+                                    <Select
+                                        value={state.role}
+                                        onChange={(value) =>
+                                            setState(prev => ({ ...prev, role: value }))
+                                        }
+                                    >
+                                        <Select.Option value="Ngo">NGO</Select.Option>
+                                        <Select.Option value="Admin">Admin</Select.Option>
                                     </Select>
                                 </Form.Item>
-                            </Col> */}
-                            <Col span={24} >
-                                <Form.Item label="Password" required >
-                                    <Input.Password placeholder='Enter Your Password' name='password' onChange={handleChange} />
+                            </Col>
+
+                            {/* ========================= */}
+                            {/* NGO EXPANDED FORM */}
+                            {/* ========================= */}
+                            {isNgo && (
+                                <>
+                                    <Col span={24}>
+                                        <Form.Item required label="Organization Name">
+                                            <Input
+                                                onChange={handleChange}
+                                                name="organizationName"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+
+                                    <Col span={24}>
+                                        <Form.Item required label="Registration Number">
+                                            <Input
+                                                onChange={handleChange}
+                                                name="registrationNumber"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+
+                                    <Col span={24}>
+                                        <Form.Item required label="Address">
+                                            <Input
+                                                onChange={handleChange}
+                                                name="address"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+
+                                    <Col span={24}>
+                                        <Form.Item required label="Phone">
+                                            <Input
+                                                onChange={handleChange}
+                                                name="phone"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={24}>
+                                        <Form.Item required label="Website">
+                                            <Input
+                                                onChange={handleChange}
+                                                name="website"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+
+                                    <Col span={24}>
+                                        <Form.Item required label="Description">
+                                            <Input.TextArea
+                                                onChange={handleChange}
+                                                name="description"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+
+                                    {/* ========================= */}
+                                    {/* UPLOAD BUTTON */}
+                                    {/* ========================= */}
+                                    <Col span={24}>
+                                        <Form.Item required label="Upload Documents">
+                                            <Upload
+                                                multiple
+                                                beforeUpload={() => false}
+                                                fileList={fileList}
+                                                onChange={({ fileList }) =>
+                                                    setFileList(fileList)
+                                                }
+                                            >
+                                                <Button icon={<UploadOutlined />}>
+                                                    Upload NGO Documents
+                                                </Button>
+                                            </Upload>
+                                        </Form.Item>
+                                    </Col>
+                                </>
+                            )}
+
+                            {/* PASSWORD */}
+                            <Col span={24}>
+                                <Form.Item required label="Password">
+                                    <Input.Password name='password' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                            <Col span={24} >
-                                <Form.Item label="Confirm Password" required >
-                                    <Input.Password placeholder='Please Confirm Your Password' name='confirmPassword' onChange={handleChange} />
+
+                            {/* CONFIRM PASSWORD */}
+                            <Col span={24}>
+                                <Form.Item required label="Confirm Password">
+                                    <Input.Password name='confirmPassword' onChange={handleChange} />
                                 </Form.Item>
                             </Col>
-                        </Row>
-                        <Row>
-                            <Col span={24} >
-                                <Button type='primary' variant='solid' block loading={isProcessing} onClick={handleSubmit}  >Register</Button>
-                                <Paragraph className='text-center my-1' >Already have an account?<Link to="/auth/login" >Login</Link></Paragraph>
+
+                            {/* SUBMIT */}
+                            <Col span={24}>
+                                <Button
+                                    type="primary"
+                                    block
+                                    loading={isProcessing}
+                                    onClick={handleSubmit}
+                                >
+                                    Register
+                                </Button>
+
+                                <Paragraph className='text-center mt-2'>
+                                    Already have an account? <Link to="/auth/login">Login</Link>
+                                </Paragraph>
                             </Col>
+
                         </Row>
+
                     </Form>
+
                 </div>
             </div>
         </main>

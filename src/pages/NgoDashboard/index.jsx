@@ -47,7 +47,7 @@ const NgoDashboard = () => {
     useEffect(() => {
         if (!isAppLoading && user) {
 
-            if (user.role === "ngo") {
+            if (user.role === "Ngo") {
 
                 // ❌ not completed profile → force settings
                 if (!user.organizationCompleted) {

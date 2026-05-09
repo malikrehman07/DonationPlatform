@@ -13,11 +13,11 @@ const Index = () => {
   return (
     <Routes>
       <Route path='/*' element={<Frontend />} />
-      <Route path='/auth/*' element={isAuth ? <Navigate to={user.role === "ngo" ? "/dashboard/overview" : "/dashboard/overview"} /> : <Auth />} />
+      <Route path='/auth/*' element={isAuth ? <Navigate to={user.role === "Ngo" ? "/dashboard/overview" : "/admin/overview"} /> : <Auth />} />
       {/* <Route path='/auth/*' element={!isAuth ? <Auth /> : <Navigate to="/" />} /> */}
       <Route path='/admin/*' element={<PrivateRoute Component={Admin} role="Admin" />} />
       {/* <Route path='/donor/*' element={<PrivateRoute Component={DonorDashboard} role="Donor" />} /> */}
-      <Route path='/dashboard/*' element={<PrivateRoute Component={NgoDashboard} role="ngo" />} />
+      <Route path='/dashboard/*' element={<PrivateRoute Component={NgoDashboard} role="Ngo" />} />
     </Routes>
   )
 }

@@ -22,7 +22,7 @@ const Overview = () => {
   // =========================
   // BLOCK ACCESS IF NOT VERIFIED
   // =========================
-  if (user?.role === "ngo" && user?.status !== "verified") {
+  if (user?.role === "Ngo" && user?.status !== "verified") {
     return (
       <div className="p-4">
         <Alert
