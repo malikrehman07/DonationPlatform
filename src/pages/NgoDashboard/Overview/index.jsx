@@ -20,9 +20,9 @@ const Overview = () => {
   const [averageDonation, setAverageDonation] = useState(0);
 
   // =========================
-  // BLOCK ACCESS IF NOT VERIFIED
+  // BLOCK ACCESS IF NOT Approved
   // =========================
-  if (user?.role === "Ngo" && user?.status !== "verified") {
+  if (user?.role === "Ngo" && user?.status !== "approved") {
     return (
       <div className="p-4">
         <Alert

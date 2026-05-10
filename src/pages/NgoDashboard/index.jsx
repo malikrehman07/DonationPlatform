@@ -49,13 +49,8 @@ const NgoDashboard = () => {
 
             if (user.role === "Ngo") {
 
-                // ❌ not completed profile → force settings
-                if (!user.organizationCompleted) {
-                    navigate("/dashboard/settings");
-                }
-
                 // ❌ rejected NGO → block access
-                if (user.status === "rejected") {
+                if (user.status === "rejected" || user.status === "under_review" || user.status === "suspended") {
                     navigate("/dashboard/settings");
                 }
             }

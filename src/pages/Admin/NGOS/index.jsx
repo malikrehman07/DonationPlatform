@@ -28,7 +28,7 @@ const NGOs = () => {
   const [filteredNgos, setFilteredNgos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("under_review");
   const [searchText, setSearchText] = useState("");
   const [dateRange, setDateRange] = useState([]);
 
@@ -155,6 +155,59 @@ const NGOs = () => {
   };
 
   // =========================
+  // STATUS CHANGE
+  // =========================
+  const handleStatusChange = async (ngoId, status) => {
+
+  try {
+
+    const token = localStorage.getItem("token");
+
+    await axios.put(
+      `http://localhost:5000/admin/ngos/${ngoId}/status`,
+      { status },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    // =========================
+    // UPDATE UI WITHOUT REFRESH
+    // =========================
+    const updated = ngos.map((ngo) => {
+
+      if (ngo._id === ngoId) {
+        return {
+          ...ngo,
+          status
+        };
+      }
+
+      return ngo;
+    });
+
+    setNgos(updated);
+    setFilteredNgos(updated);
+
+    window.notify?.(
+      "NGO status updated",
+      "success"
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    window.notify?.(
+      "Failed to update status",
+      "error"
+    );
+  }
+};
+
+  // =========================
   // DOWNLOAD DOCUMENT
   // =========================
   const handleDownload = (url) => {
@@ -168,7 +221,7 @@ const NGOs = () => {
   // STATS
   // =========================
   const stats = {
-    pending: ngos.filter(n => n.status === "pending").length,
+    under_review: ngos.filter(n => n.status === "under_review").length,
     approved: ngos.filter(n => n.status === "approved").length,
     rejected: ngos.filter(n => n.status === "rejected").length,
   };
@@ -213,35 +266,45 @@ const NGOs = () => {
       render: (status) => {
         const color =
           status === "approved" ? "green" :
-          status === "rejected" ? "red" : "orange";
+            status === "rejected" ? "red" : "orange";
 
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
       },
     },
     {
       title: "Action",
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="primary"
-            loading={actionLoading === record._id}
-            disabled={record.status !== "pending"}
-            onClick={() => handleApprove(record._id)}
-          >
-            Approve
-          </Button>
+      key: "action",
 
-          <Button
-            danger
-            loading={actionLoading === record._id}
-            disabled={record.status !== "pending"}
-            onClick={() => handleReject(record._id)}
-          >
-            Reject
-          </Button>
-        </Space>
-      ),
-    },
+      render: (_, record) => (
+
+        <Select
+          value={record.status}
+          style={{ width: 170 }}
+
+          onChange={(value) =>
+            handleStatusChange(record._id, value)
+          }
+        >
+
+          <Select.Option value="under_review">
+            Under Review
+          </Select.Option>
+
+          <Select.Option value="approved">
+            Approved
+          </Select.Option>
+
+          <Select.Option value="rejected">
+            Rejected
+          </Select.Option>
+
+          <Select.Option value="suspended">
+            Suspended
+          </Select.Option>
+
+        </Select>
+      )
+    }
   ];
 
   if (loading) {
@@ -255,7 +318,7 @@ const NGOs = () => {
 
       {/* STATS */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
-        <Col span={8}><Card>Pending: {stats.pending}</Card></Col>
+        <Col span={8}><Card>under_review: {stats.under_review}</Card></Col>
         <Col span={8}><Card>Approved: {stats.approved}</Card></Col>
         <Col span={8}><Card>Rejected: {stats.rejected}</Card></Col>
       </Row>
@@ -273,7 +336,7 @@ const NGOs = () => {
         <Col span={6}>
           <Select value={statusFilter} onChange={setStatusFilter} style={{ width: "100%" }}>
             <Option value="">All</Option>
-            <Option value="pending">Pending</Option>
+            <Option value="under_review">under_review</Option>
             <Option value="approved">Approved</Option>
             <Option value="rejected">Rejected</Option>
           </Select>

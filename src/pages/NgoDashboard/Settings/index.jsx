@@ -55,25 +55,25 @@ const Settings = () => {
     // STATUS RULES
     // =========================
     const isEditable =
-        status === "rejected" || status === "under_review";
+        status === "rejected";
 
     const isLocked =
-        status === "approved" || status === "suspended";
+        status === "approved" || status === "suspended" || status === "under_review";
 
     // =========================
     // LOAD DATA INTO FORM
     // =========================
     useEffect(() => {
 
-        if (currentUser?.organization) {
+        if (currentUser) {
 
             form.setFieldsValue({
-                name: currentUser.organization.name,
-                registrationNumber: currentUser.organization.registrationNumber,
-                address: currentUser.organization.address,
-                phone: currentUser.organization.phone,
-                website: currentUser.organization.website,
-                description: currentUser.organization.description,
+                name: currentUser.organizationName,
+                registrationNumber: currentUser.registrationNumber,
+                address: currentUser.address,
+                phone: currentUser.phone,
+                website: currentUser.website,
+                description: currentUser.description,
             });
         }
 
@@ -152,10 +152,10 @@ const Settings = () => {
         switch (status) {
 
             case "under_review":
-                return <Alert type="warning" message="Under review by admin" showIcon />;
+                return <Alert type="warning" message="Your profile is under review" showIcon />;
 
             case "approved":
-                return <Alert type="success" message="Approved (Locked)" showIcon />;
+                return <Alert type="success" message="Approved" showIcon />;
 
             case "rejected":
                 return <Alert type="error" message="Rejected - You can update and resubmit" showIcon />;

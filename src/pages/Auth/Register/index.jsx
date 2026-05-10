@@ -26,7 +26,7 @@ const Register = () => {
     const handleChange = (e) =>
         setState(s => ({ ...s, [e.target.name]: e.target.value }))
 
-    const isNgo = state.role === "ngo"
+    const isNgo = state.role === "Ngo"
 
     // =========================
     // SUBMIT
