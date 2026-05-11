@@ -25,6 +25,7 @@ import Settings from './Settings'; // ✅ NEW PAGE
 
 import { useAuthContext } from '../../context/Auth';
 import axios from 'axios';
+import Payouts from './Payouts';
 
 const { Header, Sider, Content } = Layout;
 const { SubMenu } = Menu;
@@ -66,6 +67,7 @@ const NgoDashboard = () => {
         if (location.pathname.includes('/donations')) return '3';
         if (location.pathname.includes('/donors')) return '4';
         if (location.pathname.includes('/settings')) return '5';
+        if (location.pathname.includes('/payouts')) return '6';
         return '';
     };
 
@@ -165,6 +167,9 @@ const NgoDashboard = () => {
                     <Menu.Item key="5" icon={<SettingOutlined />}>
                         <Link to="/dashboard/settings">Settings</Link>
                     </Menu.Item>
+                    <Menu.Item key="6" icon={<CreditCardOutlined />}>
+                        <Link to="/dashboard/payouts">Payouts</Link>
+                    </Menu.Item>
 
                 </Menu>
             </Sider>
@@ -200,7 +205,7 @@ const NgoDashboard = () => {
                         <Route path='/compaign/*' element={<Compaigns />} />
                         <Route path='/donations' element={<Donations />} />
                         <Route path='/donors' element={<Donors />} />
-
+                        <Route path='/payouts' element={<Payouts />} />
                         {/* ========================= */}
                         {/* SETTINGS ROUTE */}
                         {/* ========================= */}

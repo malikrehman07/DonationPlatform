@@ -28,7 +28,7 @@ const NGOs = () => {
   const [filteredNgos, setFilteredNgos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [statusFilter, setStatusFilter] = useState("under_review");
+  const [statusFilter, setStatusFilter] = useState("");
   const [searchText, setSearchText] = useState("");
   const [dateRange, setDateRange] = useState([]);
 
@@ -318,7 +318,7 @@ const NGOs = () => {
 
       {/* STATS */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
-        <Col span={8}><Card>under_review: {stats.under_review}</Card></Col>
+        <Col span={8}><Card>Under Review: {stats.under_review}</Card></Col>
         <Col span={8}><Card>Approved: {stats.approved}</Card></Col>
         <Col span={8}><Card>Rejected: {stats.rejected}</Card></Col>
       </Row>
@@ -336,7 +336,7 @@ const NGOs = () => {
         <Col span={6}>
           <Select value={statusFilter} onChange={setStatusFilter} style={{ width: "100%" }}>
             <Option value="">All</Option>
-            <Option value="under_review">under_review</Option>
+            <Option value="under_review">Under Review</Option>
             <Option value="approved">Approved</Option>
             <Option value="rejected">Rejected</Option>
           </Select>
