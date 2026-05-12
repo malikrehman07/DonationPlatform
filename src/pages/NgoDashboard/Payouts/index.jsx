@@ -91,33 +91,29 @@ const Payout = () => {
   // =========================
   const withdraw = async () => {
 
-    try {
+  try {
 
-      if (!withdrawAmount || withdrawAmount <= 0) {
-        return message.error("Enter valid amount");
-      }
+    setWithdrawLoading(true);
 
-      setWithdrawLoading(true);
+    const contract = await getContract();
 
-      const contract = await getContract();
+    const tx = await contract.withdrawFunds();
 
-      const tx = await contract.withdrawFunds();
+    await tx.wait();
 
-      await tx.wait();
+    message.success("Withdraw successful");
 
-      message.success("Withdraw successful");
+    loadBalance();
 
-      setWithdrawAmount("");
+  } catch (err) {
 
-      loadBalance();
+    console.error(err);
+    message.error(err.reason || "Withdraw failed");
 
-    } catch (err) {
-      console.error(err);
-      message.error(err.reason || "Withdraw failed");
-    } finally {
-      setWithdrawLoading(false);
-    }
-  };
+  } finally {
+    setWithdrawLoading(false);
+  }
+};
 
   // =========================
   // LOAD BALANCE ON MOUNT
