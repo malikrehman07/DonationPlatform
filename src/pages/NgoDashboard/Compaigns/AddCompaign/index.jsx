@@ -14,7 +14,9 @@ import {
 
 import { UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { ethers } from 'ethers';
 import { useAuthContext } from '../../../../context/Auth';
+import { getContract, CONTRACT_ADDRESS } from '../../../../blockchain/config';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -37,23 +39,6 @@ const AddCompaign = () => {
 
     const handleChange = (e) =>
         setState(s => ({ ...s, [e.target.name]: e.target.value }));
-
-    // =========================
-    // CLOUDINARY UPLOAD
-    // =========================
-    const uploadToCloudinary = async (file) => {
-        const formData = new FormData();
-
-        formData.append("file", file);
-        formData.append("upload_preset", "givehope_uploads");
-
-        const res = await axios.post(
-            "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
-            formData
-        );
-
-        return res.data.secure_url;
-    };
 
     // =========================
     // VALIDATION
@@ -97,6 +82,11 @@ const AddCompaign = () => {
             return false;
         }
 
+        if (!window.ethereum) {
+            message.error("Please install MetaMask to create a campaign");
+            return false;
+        }
+
         return true;
     };
 
@@ -110,51 +100,100 @@ const AddCompaign = () => {
         setIsProcessing(true);
 
         try {
-
-            const compaignId = Date.now().toString();
-
             // =========================
-            // UPLOAD IMAGES TO CLOUDINARY
+            // 1. SMART CONTRACT CREATION
             // =========================
-            const imageUrls = [];
+            message.loading({ content: "Please confirm transaction in MetaMask...", key: "tx" });
+            
+            const contract = await getContract();
+            
+            // Amount in wei
+            const targetInWei = ethers.parseEther(state.amount.toString());
 
-            for (const fileObj of fileList) {
-                const url = await uploadToCloudinary(fileObj.originFileObj);
-                imageUrls.push(url);
+            // If MetaMask gas estimation fails, you can optionally set gas limit
+            // const tx = await contract.createCampaign(state.title.trim(), state.description.trim(), targetInWei, { gasLimit: 500000 });
+            
+            // Polygon Amoy specific gas overrides to fix "transaction gas price below minimum"
+            // Hardcoding to 30/40 gwei to bypass getFeeData() throwing "eth_maxPriorityFeePerGas not available"
+            const tx = await contract.createCampaign(
+                state.title.trim(),
+                state.description.trim(),
+                targetInWei,
+                {
+                    maxPriorityFeePerGas: ethers.parseUnits("30", "gwei"),
+                    maxFeePerGas: ethers.parseUnits("40", "gwei")
+                }
+            );
+
+            message.loading({ content: "Waiting for blockchain confirmation...", key: "tx" });
+            const receipt = await tx.wait();
+
+            // Extract CampaignCreated event to get blockchainCampaignId
+            let blockchainCampaignId = null;
+            for (const log of receipt.logs) {
+                try {
+                    const parsedLog = contract.interface.parseLog(log);
+                    if (parsedLog.name === "CampaignCreated") {
+                        blockchainCampaignId = Number(parsedLog.args.campaignId);
+                        break;
+                    }
+                } catch (e) {
+                    // Ignore logs that aren't from our contract interface
+                }
             }
 
+            if (!blockchainCampaignId) {
+                // Fallback if event parsing fails
+                blockchainCampaignId = Date.now(); 
+                console.warn("Could not find CampaignCreated event, using fallback ID");
+            }
+
+            message.success({ content: "Blockchain creation successful!", key: "tx" });
+
             // =========================
-            // CAMPAIGN PAYLOAD
+            // 2. BACKEND CREATION (MULTER)
             // =========================
-            const compaignData = {
-                uid: user._id,
-                title: state.title.trim(),
-                description: state.description.trim(),
-                category: state.category,
-                amount: Number(state.amount),
-                compaignId,
-                imageUrls,
-                status: "active"
-            };
+            message.loading({ content: "Uploading images and saving...", key: "db" });
+
+            const formData = new FormData();
+            formData.append("blockchainCampaignId", blockchainCampaignId);
+            formData.append("contractAddress", CONTRACT_ADDRESS);
+            formData.append("ngoWallet", user.walletAddress || "0x"); 
+            formData.append("title", state.title.trim());
+            formData.append("description", state.description.trim());
+            formData.append("category", state.category);
+            formData.append("targetAmount", state.amount);
+
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append("images", file.originFileObj);
+                }
+            });
 
             await axios.post(
                 "http://localhost:5000/compaigns/add",
-                compaignData,
+                formData,
                 {
                     headers: {
+                        "Content-Type": "multipart/form-data",
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
                 }
             );
 
-            message.success("Campaign created successfully");
+            message.success({ content: "Campaign fully created!", key: "db" });
 
             setState(initialState);
             setFileList([]);
 
         } catch (err) {
             console.error(err);
-            message.error("Failed to create campaign");
+            if (err.code === "ACTION_REJECTED") {
+                message.error({ content: "Transaction rejected in MetaMask", key: "tx" });
+            } else {
+                message.error({ content: err.reason || "Failed to create campaign", key: "tx" });
+                message.error({ content: "Error details: " + err.message, key: "db" });
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -207,8 +246,9 @@ const AddCompaign = () => {
                         </Col>
 
                         <Col xs={24} md={12}>
-                            <Form.Item label="Target Amount ($)" required>
+                            <Form.Item label="Target Amount (MATIC)" required>
                                 <Input
+                                    type="number"
                                     name="amount"
                                     value={state.amount}
                                     onChange={handleChange}
@@ -239,7 +279,7 @@ const AddCompaign = () => {
                         loading={isProcessing}
                         onClick={handleSubmit}
                     >
-                        Create Campaign
+                        Create Campaign (Blockchain & DB)
                     </Button>
 
                 </Form>

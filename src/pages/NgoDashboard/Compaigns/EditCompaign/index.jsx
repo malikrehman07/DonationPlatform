@@ -48,12 +48,12 @@ const EditCompaign = () => {
         title: data.title,
         description: data.description,
         category: data.category,
-        amount: data.amount
+        amount: data.targetAmount
       });
 
       // preview images
-      if (data.imageUrls?.length) {
-        const previews = data.imageUrls.map((url, i) => ({
+      if (data.images?.length) {
+        const previews = data.images.map((url, i) => ({
           uid: `${i}`,
           name: `image-${i}`,
           status: "done",
@@ -98,7 +98,6 @@ const EditCompaign = () => {
       formData.append("title", values.title);
       formData.append("description", values.description);
       formData.append("category", values.category);
-      formData.append("amount", values.amount);
 
       // keep existing images + new ones
       fileList.forEach((file) => {

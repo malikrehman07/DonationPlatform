@@ -13,42 +13,15 @@ const Donors = () => {
 
     const fetchDonors = async () => {
       try {
-
         const token = localStorage.getItem("token");
-
         const res = await axios.get(
-          "http://localhost:5000/dashboard/donations",
+          "http://localhost:5000/donations/donors",
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
 
-        const donations = res.data.donations || [];
-
-        // ✅ Extract UNIQUE donors
-        const uniqueMap = {};
-
-        donations.forEach(d => {
-          const key = d.isAnonymous
-            ? `anon-${d._id}`   // treat anonymous separately
-            : d.email;
-
-          if (!uniqueMap[key]) {
-            uniqueMap[key] = {
-              _id: key,
-              fullName: d.fullName,
-              email: d.email,
-              phoneNo: d.phoneNo,
-              city: d.city,
-              isAnonymous: d.isAnonymous,
-              totalDonated: Number(d.amount || 0),
-            };
-          } else {
-            uniqueMap[key].totalDonated += Number(d.amount || 0);
-          }
-        });
-
-        setDonors(Object.values(uniqueMap));
+        setDonors(res.data.donors || []);
 
       } catch (err) {
         console.error("Error fetching donors:", err);
@@ -62,41 +35,32 @@ const Donors = () => {
   }, []);
 
   const columns = [
-
     {
       title: "Donor Name",
-      render: (_, record) =>
-        record.isAnonymous
-          ? <Tag>Anonymous</Tag>
-          : record.fullName
+      dataIndex: "name",
+      render: (name) => <strong>{name || "Anonymous"}</strong>
     },
-
     {
       title: "Email",
-      render: (_, record) =>
-        record.isAnonymous ? "Hidden" : record.email
+      dataIndex: "email",
+      render: (email) => email || "N/A"
     },
-
     {
-      title: "Phone",
-      render: (_, record) =>
-        record.isAnonymous ? "Hidden" : record.phoneNo
+      title: "Phone Number",
+      dataIndex: "phone", // Need to ensure phone is included in aggregation
+      render: (phone) => phone || "N/A"
     },
-
-    {
-      title: "City",
-      render: (_, record) =>
-        record.isAnonymous ? "Hidden" : record.city
-    },
-
     {
       title: "Total Donated",
       dataIndex: "totalDonated",
       render: (amount) => (
-        <strong>$ {amount.toLocaleString()}</strong>
+        <strong style={{ color: "#1890ff" }}>{amount.toLocaleString()} MATIC</strong>
       )
+    },
+    {
+      title: "Donations Count",
+      dataIndex: "donationCount",
     }
-
   ];
 
   if (loading) {

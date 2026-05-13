@@ -6,16 +6,8 @@ import { ethers } from "ethers";
 
 const { Title } = Typography;
 
-// =========================
-// CONTRACT CONFIG
-// =========================
-const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
-
-// Replace with your actual ABI
-const CONTRACT_ABI = [
-  "function getCampaign(uint256 _campaignId) public view returns(uint256,address,string,string,uint256,uint256,uint8)",
-  "function donate(uint256 _campaignId) public payable"
-];
+import { getContract, getReadOnlyContract, CONTRACT_ADDRESS } from "../../../blockchain/config";
+import ABI from "../../../blockchain/GiveHope.json";
 
 const AllCompaigns = () => {
   const [compaigns, setCompaigns] = useState([]);
@@ -42,18 +34,7 @@ const AllCompaigns = () => {
       // =========================
       // CONNECT TO BLOCKCHAIN
       // =========================
-      if (!window.ethereum) {
-        window.notify("Please install MetaMask", "error");
-        return;
-      }
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        provider
-      );
+      const contract = getReadOnlyContract();
 
       // =========================
       // MERGE BLOCKCHAIN DATA
@@ -103,53 +84,12 @@ const AllCompaigns = () => {
   }, [getCompaigns]);
 
   // =========================
-  // DONATE FUNCTION
+  // DONATE FUNCTION (Redirect to Checkout)
   // =========================
-  const handleDonate = async (campaignId) => {
-    try {
-      if (!window.ethereum) {
-        return window.notify("Please install MetaMask", "error");
-      }
-
-      // Example donation amount
-      const amount = prompt("Enter donation amount in ETH");
-
-      if (!amount || Number(amount) <= 0) {
-        return window.notify("Invalid amount", "error");
-      }
-
-      // Connect wallet
-      await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-
-      const signer = await provider.getSigner();
-
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
-      // Donate transaction
-      const tx = await contract.donate(campaignId, {
-        value: ethers.parseEther(amount),
-      });
-
-      window.notify("Transaction submitted...", "success");
-
-      await tx.wait();
-
-      window.notify("Donation successful", "success");
-
-      // Refresh campaigns
-      getCompaigns();
-    } catch (error) {
-      console.error(error);
-      window.notify(error.reason || "Donation failed", "error");
-    }
+  const handleDonate = (compaign) => {
+    navigate("/checkout", {
+      state: { compaign }
+    });
   };
 
   // =========================
@@ -216,7 +156,7 @@ const AllCompaigns = () => {
                   }
                 >
                   <img
-                    src={compaign.imageUrls?.[0]}
+                    src={compaign.images?.[0] || "https://via.placeholder.com/300"}
                     alt={compaign.title}
                     style={{
                       width: "300px",
@@ -250,7 +190,7 @@ const AllCompaigns = () => {
                     </Title>
 
                     <Title level={5} className="text-primary mb-2 mt-0">
-                      {raised} ETH
+                      {raised} MATIC
                     </Title>
                   </span>
 
@@ -260,7 +200,7 @@ const AllCompaigns = () => {
                     </Title>
 
                     <Title level={5} className="mb-2 mt-0">
-                      {target} ETH
+                      {target} MATIC
                     </Title>
                   </span>
                 </div>
@@ -296,7 +236,7 @@ const AllCompaigns = () => {
                     block
                     disabled={compaign.status === "Completed"}
                     onClick={() =>
-                      handleDonate(compaign.blockchainCampaignId)
+                      handleDonate(compaign)
                     }
                   >
                     {compaign.status === "Completed"

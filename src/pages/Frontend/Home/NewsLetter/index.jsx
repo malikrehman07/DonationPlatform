@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, Col, Row, Typography, Form, Input } from 'antd'
 import { useState } from 'react'
-// import axios from "axios"
+import axios from "axios"
 
 const { Title } = Typography
 const NewsLetter = () => {
@@ -10,35 +10,25 @@ const NewsLetter = () => {
     const handleChange = (e) => setState(s => ({ ...s, [e.target.name]: e.target.value }))
 
 
-    // const handleSubscribe = async () => {
-    //     const { email } = state;
-    //     if (!window.isEmail(email)) { return window.notify("Please Enter Your Email", "error") }
-    //     try {
-    //         setLoading(true);
-    //         const res = await axios.post("https://backend-theta-silk-38.vercel.app/contact/subscribe", { email });
+    const handleSubscribe = async () => {
+        const { email } = state;
+        if (!email) { return window.notify("Please Enter Your Email", "error") }
+        
+        try {
+            setLoading(true);
+            const res = await axios.post("http://localhost:5000/newsletter/subscribe", { email });
 
-    //         if (res.data?.success) {
-    //             window.notify("Subscribed successfully! 🎉", 'success');
-    //         } else {
-    //             window.notify(res.data?.message || "Subscription failed", 'error');
-    //         }
-    //     } catch (error) {
-    //         window.notify(error.response?.data?.message || "Something went wrong!", 'error');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-    const handleSubscribe = () => {
-        const { email } = state; 
-        if (!window.isEmail(email)) {
-            return window.notify("Please Enter Your Email", "error");
-        }
-        // Simulate an API call
-        setLoading(true);
-        setTimeout(() => {
+            if (res.data?.success) {
+                window.notify(res.data?.message || "Subscribed successfully! 🎉", 'success');
+                setState({ email: "" }); // Clear input
+            } else {
+                window.notify(res.data?.message || "Subscription failed", 'error');
+            }
+        } catch (error) {
+            window.notify(error.response?.data?.message || "Something went wrong!", 'error');
+        } finally {
             setLoading(false);
-            window.notify("Subscribed successfully! 🎉", 'success');
-        }, 2000);
+        }
     };
     return (
         <div style={{backgroundColor:'#ededed'}} className='py-5' >

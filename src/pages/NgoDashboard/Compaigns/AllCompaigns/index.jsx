@@ -18,47 +18,25 @@ const AllCompaigns = () => {
   // FETCH NGO CAMPAIGNS
   // =========================
   const getCompaigns = useCallback(async () => {
-    if (!user?.uid) return;
+    const userId = user?.uid || user?._id;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
     try {
       const token = localStorage.getItem("token");
 
-      const [compRes, donRes] = await Promise.all([
-        axios.get(
-          `http://localhost:5000/compaigns/my/${user.uid}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        ),
-
-        axios.get(
-          `http://localhost:5000/dashboard/donations`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
-      ]);
+      const compRes = await axios.get(
+        `http://localhost:5000/compaigns/my/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       setCompaigns(compRes.data.compaigns || []);
-
-      // =========================
-      // CALCULATE RAISED AMOUNT
-      // =========================
-      const totals = {};
-
-      (donRes.data.donations || []).forEach((donation) => {
-        const compId = donation.compaign?.compaignId;
-
-        if (!compId) return;
-
-        const amount = Number(donation.amount || 0);
-
-        totals[compId] = (totals[compId] || 0) + amount;
-      });
-
-      setCompaignTotals(totals);
 
     } catch (err) {
       console.error("Error fetching campaigns:", err);
@@ -83,7 +61,7 @@ const AllCompaigns = () => {
 
     {
       title: "Image",
-      dataIndex: "imageUrls",
+      dataIndex: "images",
       render: (images) =>
         images?.length ? (
           <Image
@@ -107,16 +85,16 @@ const AllCompaigns = () => {
 
     {
       title: "Raised",
-      dataIndex: "_id",
-      render: (id) =>
-        `$${(compaignTotals[id] || 0).toLocaleString()}`
+      dataIndex: "raisedAmount",
+      render: (amount) =>
+        `${Number(amount || 0).toLocaleString()} MATIC`
     },
 
     {
       title: "Target",
-      dataIndex: "amount",
+      dataIndex: "targetAmount",
       render: (amount) =>
-        `$${Number(amount || 0).toLocaleString()}`
+        `${Number(amount || 0).toLocaleString()} MATIC`
     },
 
     {

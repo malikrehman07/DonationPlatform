@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Table, Tag, Typography, Button, Avatar, Spin, Tooltip } from "antd";
 import axios from "axios";
+import { useAuthContext } from "../../../context/Auth";
 
 const { Title } = Typography;
 
 const Donations = () => {
-
+    const { user } = useAuthContext();
     const [donations, setDonations] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -13,14 +14,14 @@ const Donations = () => {
     // FETCH DONATIONS
     // =========================
     useEffect(() => {
-
         const fetchDonations = async () => {
+            const userId = user?._id || user?.uid;
+            if (!userId) return;
+
             try {
-
                 const token = localStorage.getItem("token");
-
                 const res = await axios.get(
-                    "http://localhost:5000/dashboard/donations",
+                    `http://localhost:5000/donations/ngo/${userId}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
@@ -39,16 +40,14 @@ const Donations = () => {
 
         fetchDonations();
 
-    }, []);
+    }, [user]);
 
     // =========================
     // DELETE (optional)
     // =========================
     const handleDelete = async (donation) => {
         try {
-
             const token = localStorage.getItem("token");
-
             await axios.delete(
                 `http://localhost:5000/dashboard/delete/${donation._id}`,
                 {
@@ -61,7 +60,6 @@ const Donations = () => {
             setDonations(prev =>
                 prev.filter(d => d._id !== donation._id)
             );
-
         } catch (error) {
             console.error("Delete Error:", error);
         }
@@ -71,16 +69,20 @@ const Donations = () => {
     // TABLE COLUMNS
     // =========================
     const columns = [
-
         {
-            title: "Donation ID",
-            dataIndex: "_id",
-            key: "_id",
-            render: (id) => (
-                <Tooltip title={id}>
-                    <span>
-                        {id.slice(0, 6)}...{id.slice(-4)}
-                    </span>
+            title: "Transaction Hash",
+            dataIndex: "transactionHash",
+            key: "transactionHash",
+            render: (hash) => (
+                <Tooltip title={hash}>
+                    <a 
+                        href={`https://amoy.polygonscan.com/tx/${hash}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontFamily: "monospace" }}
+                    >
+                        {hash ? `${hash.slice(0, 6)}...${hash.slice(-4)}` : "N/A"}
+                    </a>
                 </Tooltip>
             )
         },
@@ -93,10 +95,10 @@ const Donations = () => {
             key: "donor",
             render: (_, record) => (
                 <div>
-                    <strong>{record.fullName}</strong>
+                    <strong>{record.donorName}</strong>
                     <br />
                     <small style={{ color: "gray" }}>
-                        {record.email || "No email"}
+                        {record.donorEmail || "Anonymous"}
                     </small>
                 </div>
             )
@@ -110,19 +112,11 @@ const Donations = () => {
             key: "campaign",
             render: (_, record) => (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-
-                    <Avatar
-                        src={record.compaign?.image}
-                        shape="square"
-                        size={40}
-                    />
-
                     <div>
                         <div style={{ fontWeight: 500 }}>
-                            {record.compaign?.title || "Unknown Campaign"}
+                            {record.campaign?.title || "Unknown Campaign"}
                         </div>
                     </div>
-
                 </div>
             )
         },
@@ -134,9 +128,9 @@ const Donations = () => {
             title: "Amount Received",
             dataIndex: "amount",
             key: "amount",
-            render: (amount) => (
+            render: (amount, record) => (
                 <strong style={{ color: "#1890ff" }}>
-                    $ {Number(amount || 0).toLocaleString()}
+                    {Number(amount || 0).toLocaleString()} {record.paymentMethod === 'crypto' ? 'MATIC' : 'USD'}
                 </strong>
             )
         },

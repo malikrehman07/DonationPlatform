@@ -13,11 +13,9 @@ const Donations = () => {
 
     const fetchDonations = async () => {
       try {
-
         const token = localStorage.getItem("token");
-
         const res = await axios.get(
-          "http://localhost:5000/dashboard/donations",
+          "http://localhost:5000/donations/all",
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -41,11 +39,18 @@ const Donations = () => {
   const columns = [
 
     {
-      title: "ID",
-      dataIndex: "_id",
-      render: (id) => (
-        <Tooltip title={id}>
-          {id.slice(0, 6)}...{id.slice(-4)}
+      title: "Transaction Hash",
+      dataIndex: "transactionHash",
+      render: (hash) => (
+        <Tooltip title={hash}>
+          <a 
+            href={`https://amoy.polygonscan.com/tx/${hash}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ fontFamily: "monospace" }}
+          >
+            {hash ? `${hash.slice(0, 6)}...${hash.slice(-4)}` : "N/A"}
+          </a>
         </Tooltip>
       )
     },
@@ -53,15 +58,18 @@ const Donations = () => {
     {
       title: "Donor",
       render: (_, record) => (
-        record.isAnonymous
-          ? <Tag>Anonymous</Tag>
-          : (
-            <div>
-              <strong>{record.fullName}</strong>
-              <br />
-              <small>{record.email}</small>
-            </div>
-          )
+        <div>
+          <strong>{record.isAnonymous ? "Anonymous" : record.donorName}</strong>
+          <br />
+          <small>{record.donorEmail}</small>
+        </div>
+      )
+    },
+
+    {
+      title: "NGO",
+      render: (_, record) => (
+        <span>{record.ngo?.organizationName || "N/A"}</span>
       )
     },
 
@@ -69,8 +77,7 @@ const Donations = () => {
       title: "Campaign",
       render: (_, record) => (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar src={record.compaign?.image} shape="square" />
-          <span>{record.compaign?.title || "Unknown"}</span>
+          <span>{record.campaign?.title || "Unknown"}</span>
         </div>
       )
     },
@@ -78,9 +85,9 @@ const Donations = () => {
     {
       title: "Amount",
       dataIndex: "amount",
-      render: (amount) => (
+      render: (amount, record) => (
         <strong style={{ color: "#1890ff" }}>
-          $ {Number(amount).toLocaleString()}
+          {Number(amount).toLocaleString()} {record.paymentMethod === 'crypto' ? 'MATIC' : 'USD'}
         </strong>
       )
     },

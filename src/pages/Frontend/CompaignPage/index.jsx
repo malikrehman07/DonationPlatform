@@ -21,16 +21,8 @@ import Compaigns from "../Home/Compaigns";
 
 const { Title, Paragraph } = Typography;
 
-// =========================
-// CONTRACT CONFIG
-// =========================
-const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
-
-const CONTRACT_ABI = [
-  "function getCampaign(uint256 _campaignId) public view returns(uint256,address,string,string,uint256,uint256,uint8)",
-
-  "function donate(uint256 _campaignId) public payable",
-];
+import { getContract, getReadOnlyContract, CONTRACT_ADDRESS } from "../../../blockchain/config";
+import ABI from "../../../blockchain/GiveHope.json";
 
 const CompaignPage = () => {
   const { id } = useParams();
@@ -61,23 +53,10 @@ const CompaignPage = () => {
         const mongoCampaign = response.data.compaign;
 
         // =========================
-        // CONNECT TO BLOCKCHAIN
-        // =========================
-        if (!window.ethereum) {
-          return message.error("Please install MetaMask");
-        }
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-
-        const contract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          CONTRACT_ABI,
-          provider
-        );
-
-        // =========================
         // FETCH BLOCKCHAIN DATA
         // =========================
+        const contract = getReadOnlyContract();
+        
         const blockchainData = await contract.getCampaign(
           mongoCampaign.blockchainCampaignId
         );
@@ -122,73 +101,13 @@ const CompaignPage = () => {
   // =========================
   // DONATE FUNCTION
   // =========================
-  const handleDonate = async () => {
-    try {
-      if (!window.ethereum) {
-        return message.error("Please install MetaMask");
-      }
-
-      if (!donationAmount || Number(donationAmount) <= 0) {
-        return message.error("Please enter valid amount");
-      }
-
-      // Connect wallet
-      await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-
-      const signer = await provider.getSigner();
-
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
-      // =========================
-      // BLOCKCHAIN DONATION
-      // =========================
-      const tx = await contract.donate(
-        compaign.blockchainCampaignId,
-        {
-          value: ethers.parseEther(donationAmount),
-        }
-      );
-
-      message.loading({
-        content: "Transaction submitted...",
-        key: "donation",
-      });
-
-      await tx.wait();
-
-      message.success({
-        content: "Donation successful",
-        key: "donation",
-      });
-
-      // =========================
-      // UPDATE UI
-      // =========================
-      const newRaised =
-        Number(compaign.raisedAmount) +
-        Number(donationAmount);
-
-      setCompaign({
-        ...compaign,
-        raisedAmount: newRaised.toString(),
-      });
-
-      setDonationAmount("");
-    } catch (error) {
-      console.error(error);
-
-      message.error(
-        error.reason || "Donation failed"
-      );
-    }
+  // =========================
+  // DONATE FUNCTION (Redirect to Checkout)
+  // =========================
+  const handleDonate = () => {
+    navigate("/checkout", {
+      state: { compaign }
+    });
   };
 
   // =========================
@@ -273,7 +192,7 @@ const CompaignPage = () => {
             style={{ textAlign: "center" }}
           >
             <Carousel autoplay dots={false}>
-              {compaign.imageUrls?.map(
+              {compaign.images?.map(
                 (imgUrl, i) => (
                   <div key={i}>
                     <img
@@ -318,7 +237,7 @@ const CompaignPage = () => {
                   level={5}
                   className="text-primary mb-2 mt-0"
                 >
-                  {raised} ETH
+                  {raised} MATIC
                 </Title>
               </span>
 
@@ -334,7 +253,7 @@ const CompaignPage = () => {
                   level={5}
                   className="mb-2 mt-0"
                 >
-                  {target} ETH
+                  {target} MATIC
                 </Title>
               </span>
             </div>
@@ -359,7 +278,7 @@ const CompaignPage = () => {
             <div className="mt-4">
               <Input
                 size="large"
-                placeholder="Enter amount in ETH"
+                placeholder="Enter amount in MATIC"
                 value={donationAmount}
                 onChange={(e) =>
                   setDonationAmount(
@@ -384,7 +303,7 @@ const CompaignPage = () => {
                   onClick={handleDonate}
                 >
                   {compaign.status ===
-                  "Completed"
+                    "Completed"
                     ? "Campaign Completed"
                     : "Donate Now"}
                 </Button>

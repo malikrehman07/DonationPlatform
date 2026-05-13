@@ -20,9 +20,9 @@ const Compaigns = () => {
         try {
             setLoading(true);
 
-            const res = await axios.get("http://localhost:5000/compaigns");
+            const res = await axios.get("http://localhost:5000/compaigns/read");
 
-            setCompaigns(res.data || []);
+            setCompaigns(res.data.compaigns || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -53,10 +53,10 @@ const Compaigns = () => {
                         <p>Loading campaigns...</p>
                     </Col>
                 ) : (
-                    compaigns.slice(0, 8).map((compaign) => {
+                    compaigns.slice(0, 4).map((compaign) => {
                         const raised = compaignTotals[compaign._id] || 0;
                         const percent = Math.min(
-                            (raised / compaign.amount) * 100,
+                            (raised / (compaign.targetAmount || 1)) * 100,
                             100
                         );
 
@@ -81,7 +81,7 @@ const Compaigns = () => {
                                     >
                                         <img
                                             src={
-                                                compaign.imageUrls?.[0] ||
+                                                compaign.images?.[0] ||
                                                 "https://via.placeholder.com/300"
                                             }
                                             alt={compaign.title}
@@ -119,7 +119,7 @@ const Compaigns = () => {
                                                 level={5}
                                                 className="text-primary mb-2 mt-0"
                                             >
-                                                ${raised.toLocaleString()}
+                                                {raised.toLocaleString()} MATIC
                                             </Title>
                                         </span>
 
@@ -131,8 +131,7 @@ const Compaigns = () => {
                                                 level={5}
                                                 className="mb-2 mt-0"
                                             >
-                                                $
-                                                {compaign.amount.toLocaleString()}
+                                                {(compaign.targetAmount || 0).toLocaleString()} MATIC
                                             </Title>
                                         </span>
                                     </div>
