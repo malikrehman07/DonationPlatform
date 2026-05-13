@@ -13,94 +13,59 @@ import {
   Carousel,
   Input,
   message,
+  Tag,
 } from "antd";
 
 import axios from "axios";
 import { ethers } from "ethers";
 import Compaigns from "../Home/Compaigns";
+import { getReadOnlyContract } from "../../../blockchain/config";
 
-const { Title, Paragraph } = Typography;
-
-import { getContract, getReadOnlyContract, CONTRACT_ADDRESS } from "../../../blockchain/config";
-import ABI from "../../../blockchain/GiveHope.json";
+const { Title, Paragraph, Text } = Typography;
 
 const CompaignPage = () => {
   const { id } = useParams();
 
   const [compaign, setCompaign] = useState(null);
-
   const [loading, setLoading] = useState(true);
-
   const [donationAmount, setDonationAmount] = useState("");
+  const [donations, setDonations] = useState([]);
 
   const navigate = useNavigate();
 
   // =========================
-  // FETCH CAMPAIGN
+  // FETCH CAMPAIGN & DONATIONS
   // =========================
   useEffect(() => {
-    const fetchCompaign = async () => {
+    const fetchData = async () => {
       setLoading(true);
-
       try {
-        // =========================
-        // FETCH MONGODB DATA
-        // =========================
-        const response = await axios.get(
-          `http://localhost:5000/compaigns/read/${id}`
-        );
+        const res = await axios.get(`http://localhost:5000/compaigns/read/${id}`);
+        const mongoCampaign = res.data.compaign;
 
-        const mongoCampaign = response.data.compaign;
-
-        // =========================
-        // FETCH BLOCKCHAIN DATA
-        // =========================
         const contract = getReadOnlyContract();
-        
-        const blockchainData = await contract.getCampaign(
-          mongoCampaign.blockchainCampaignId
-        );
+        const blockchainData = await contract.getCampaign(mongoCampaign.blockchainCampaignId);
 
-        // =========================
-        // MERGE DATA
-        // =========================
-        const finalCampaign = {
+        setCompaign({
           ...mongoCampaign,
+          blockchainId: Number(blockchainData[0]),
+          raisedAmount: mongoCampaign.raisedAmount,
+          targetAmount: mongoCampaign.targetAmount,
+          status: mongoCampaign.status,
+        });
 
-          id: Number(blockchainData[0]),
-
-          ngo: blockchainData[1],
-
-          title: blockchainData[2],
-
-          description: blockchainData[3],
-
-          targetAmount: ethers.formatEther(blockchainData[4]),
-
-          raisedAmount: ethers.formatEther(blockchainData[5]),
-
-          status:
-            Number(blockchainData[6]) === 0
-              ? "Active"
-              : "Completed",
-        };
-
-        setCompaign(finalCampaign);
+        const donorRes = await axios.get(`http://localhost:5000/donations/campaign/${mongoCampaign._id}`);
+        setDonations(donorRes.data.donations || []);
       } catch (error) {
         console.error(error);
-
-        message.error("Failed to fetch campaign");
+        message.error("Failed to fetch campaign data");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchCompaign();
+    fetchData();
   }, [id]);
 
-  // =========================
-  // DONATE FUNCTION
-  // =========================
   // =========================
   // DONATE FUNCTION (Redirect to Checkout)
   // =========================
@@ -110,285 +75,112 @@ const CompaignPage = () => {
     });
   };
 
-  // =========================
-  // LOADING
-  // =========================
-  if (loading) {
-    return (
-      <Spin
-        size="large"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      />
-    );
-  }
-
-  // =========================
-  // NOT FOUND
-  // =========================
-  if (!compaign) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <Title level={3}>
-          Campaign not found
-        </Title>
-      </div>
-    );
-  }
+  if (loading) return <Spin size="large" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }} />;
+  if (!compaign) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}><Title level={3}>Campaign not found</Title></div>;
 
   const raised = Number(compaign.raisedAmount);
-
   const target = Number(compaign.targetAmount);
-
-  const progress =
-    target > 0
-      ? Math.min((raised / target) * 100, 100)
-      : 0;
+  const progress = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
 
   return (
     <>
-      {/* =========================
-          BREADCRUMB
-      ========================= */}
       <div className="container mt-3">
-        <Row>
-          <Col span={24}>
-            <Breadcrumb
-              items={[
-                {
-                  title: <Link to="/">Home</Link>,
-                },
-                {
-                  title: compaign.title,
-                },
-              ]}
-            />
-          </Col>
-        </Row>
+        <Breadcrumb items={[{ title: <Link to="/">Home</Link> }, { title: compaign.title }]} />
       </div>
 
-      {/* =========================
-          MAIN SECTION
-      ========================= */}
       <div className="container py-5">
-        <Row gutter={[16, 16]} align="middle">
-          {/* IMAGES */}
-          <Col
-            xs={24}
-            sm={24}
-            md={24}
-            lg={12}
-            style={{ textAlign: "center" }}
-          >
+        <Row gutter={[32, 32]}>
+          <Col xs={24} lg={12}>
             <Carousel autoplay dots={false}>
-              {compaign.images?.map(
-                (imgUrl, i) => (
-                  <div key={i}>
-                    <img
-                      src={imgUrl}
-                      alt={`Campaign ${i + 1}`}
-                      style={{
-                        maxHeight: "500px",
-                      }}
-                      className="img-fluid"
-                    />
-                  </div>
-                )
-              )}
+              {compaign.images?.map((imgUrl, i) => (
+                <div key={i}>
+                  <img src={imgUrl} alt={`Campaign ${i + 1}`} style={{ height: "450px", width: "100%", objectFit: "cover", borderRadius: "15px" }} />
+                </div>
+              ))}
             </Carousel>
           </Col>
 
-          {/* DETAILS */}
-          <Col xs={24} sm={24} md={24} lg={12}>
-            <Title level={2}>
-              {compaign.title}
-            </Title>
-
-            <Title level={4}>
-              Campaign Details
-            </Title>
-
-            <Paragraph>
-              {compaign.description}
-            </Paragraph>
-
-            {/* RAISED / TARGET */}
-            <div className="d-flex justify-content-between align-items-center text-center w-100">
-              <span>
-                <Title
-                  level={5}
-                  className="text-primary m-0"
-                >
-                  Raised
-                </Title>
-
-                <Title
-                  level={5}
-                  className="text-primary mb-2 mt-0"
-                >
-                  {raised} MATIC
-                </Title>
-              </span>
-
-              <span>
-                <Title
-                  level={5}
-                  className="m-0"
-                >
-                  Target
-                </Title>
-
-                <Title
-                  level={5}
-                  className="mb-2 mt-0"
-                >
-                  {target} MATIC
-                </Title>
-              </span>
+          <Col xs={24} lg={12}>
+            <Title level={2} className="mb-0">{compaign.title}</Title>
+            <Tag color="blue" className="mb-3">{compaign.category?.toUpperCase()}</Tag>
+            
+            <div className="p-4 bg-light rounded-4 mb-4">
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Text type="secondary">Raised</Text>
+                  <Title level={3} className="m-0 text-primary">{raised.toLocaleString()} MATIC</Title>
+                </Col>
+                <Col span={12}>
+                  <Text type="secondary">Goal</Text>
+                  <Title level={3} className="m-0">{target.toLocaleString()} MATIC</Title>
+                </Col>
+              </Row>
+              <Progress percent={progress} strokeColor={{ "0%": "#108ee9", "100%": "#87d068" }} status="active" className="mt-3" />
             </div>
 
-            {/* PROGRESS */}
-            <Progress
-              percent={progress}
-              showInfo={false}
-              strokeColor={{
-                "0%": "#108ee9",
-                "100%": "#87d068",
-              }}
-            />
+            <Card bordered={false} className="shadow-sm rounded-4 mb-4">
+              <Title level={4}>NGO Profile</Title>
+              <div className="d-flex align-items-center">
+                <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-3" style={{width: 50, height: 50, fontSize: 20}}>
+                  {compaign.createdBy?.organizationName?.charAt(0)}
+                </div>
+                <div>
+                  <Title level={5} className="m-0">{compaign.createdBy?.organizationName}</Title>
+                  <Text type="secondary">{compaign.createdBy?.address}</Text>
+                </div>
+              </div>
+              <Paragraph className="mt-3 text-muted">
+                {compaign.createdBy?.description || "This NGO is dedicated to making a positive impact in the community through transparent and effective campaigns."}
+              </Paragraph>
+            </Card>
 
-            {/* STATUS */}
-            <div className="mt-3">
-              <strong>Status:</strong>{" "}
-              {compaign.status}
-            </div>
-
-            {/* DONATION INPUT */}
-            <div className="mt-4">
-              <Input
-                size="large"
-                placeholder="Enter amount in MATIC"
-                value={donationAmount}
-                onChange={(e) =>
-                  setDonationAmount(
-                    e.target.value
-                  )
-                }
-              />
-            </div>
-
-            {/* DONATE BUTTON */}
-            <Row className="mt-3">
-              <Col span={24}>
-                <Button
-                  type="primary"
-                  size="large"
-                  shape="round"
-                  block
-                  disabled={
-                    compaign.status ===
-                    "Completed"
-                  }
-                  onClick={handleDonate}
-                >
-                  {compaign.status ===
-                    "Completed"
-                    ? "Campaign Completed"
-                    : "Donate Now"}
-                </Button>
-              </Col>
-            </Row>
+            <Button type="primary" size="large" block shape="round" style={{ height: 50, fontSize: 18 }} onClick={handleDonate} disabled={compaign.status === "completed"}>
+              {compaign.status === "completed" ? "Campaign Completed" : "Donate Now"}
+            </Button>
           </Col>
         </Row>
       </div>
 
-      {/* DETAILS SECTION */}
-      <div className="container">
-        <Row>
-          <Col
-            span={12}
-            className="text-center"
-          >
-            <Title level={5}>
-              <a
-                href="#donation-details"
-                style={{ color: "#222" }}
-              >
-                Campaign Details
-              </a>
-            </Title>
-
-            <Divider
-              style={{ borderColor: "#222" }}
-            />
-          </Col>
-
-          <Col
-            span={12}
-            className="text-center"
-          >
-            <Title level={5}>
-              <a
-                href="#donations"
-                style={{ color: "#222" }}
-              >
-                Donations
-              </a>
-            </Title>
-
-            <Divider
-              style={{ borderColor: "#222" }}
-            />
-          </Col>
-        </Row>
-
-        {/* DESCRIPTION */}
-        <Row
-          gutter={[8, 8]}
-          className="py-5"
-          id="donation-details"
-        >
-          <Col span={24}>
-            <Title level={2}>
-              Campaign Details
-            </Title>
-
+      <div className="container pb-5">
+        <Row gutter={[32, 32]}>
+          <Col xs={24} lg={16}>
+            <Title level={3}>About the Campaign</Title>
+            <Paragraph style={{ fontSize: 16, lineHeight: 1.8 }}>{compaign.description}</Paragraph>
+            
+            <Divider />
+            
+            <Title level={3}>Impact Summary</Title>
             <Paragraph>
-              {compaign.description}
+              By donating to this campaign, you are helping directly with {compaign.category}. 
+              Your contribution is recorded on the Polygon blockchain for 100% transparency.
             </Paragraph>
           </Col>
-        </Row>
 
-        <Divider style={{ borderColor: "#222" }} />
-      </div>
-
-      {/* OTHER CAMPAIGNS */}
-      <div className="container py-2 mb-5">
-        <Row gutter={[16, 16]}>
-          <Col
-            span={24}
-            className="text-center"
-          >
-            <Title level={1}>
-              Other Campaigns
-            </Title>
-
-            <Compaigns />
+          <Col xs={24} lg={8}>
+            <Card title="Recent Donors" bordered={false} className="shadow-sm rounded-4">
+              {donations.length === 0 ? (
+                <Text type="secondary">Be the first one to donate!</Text>
+              ) : (
+                donations.map((d, i) => (
+                  <div key={i} className="mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                      <Text strong>{d.isAnonymous ? "Anonymous" : d.donorName}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>{new Date(d.createdAt).toLocaleDateString()}</Text>
+                    </div>
+                    <Text strong className="text-success">+{d.amount} MATIC</Text>
+                  </div>
+                ))
+              )}
+            </Card>
           </Col>
         </Row>
+      </div>
 
-        <Divider style={{ borderColor: "#222" }} />
+      <div className="container py-5 text-center">
+        <Divider />
+        <Title level={2}>More Active Campaigns</Title>
+        <Compaigns />
       </div>
     </>
   );

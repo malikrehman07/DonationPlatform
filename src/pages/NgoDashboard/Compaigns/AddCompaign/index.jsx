@@ -57,6 +57,11 @@ const AddCompaign = () => {
             return false;
         }
 
+        if (!user.walletAddress) {
+            message.error("Please link your wallet in the Payout section before creating a campaign");
+            return false;
+        }
+
         if (!title || title.trim().length < 3) {
             message.error("Enter valid campaign title");
             return false;
@@ -120,8 +125,8 @@ const AddCompaign = () => {
                 state.description.trim(),
                 targetInWei,
                 {
-                    maxPriorityFeePerGas: ethers.parseUnits("30", "gwei"),
-                    maxFeePerGas: ethers.parseUnits("40", "gwei")
+                    maxPriorityFeePerGas: ethers.parseUnits("40", "gwei"),
+                    maxFeePerGas: ethers.parseUnits("60", "gwei")
                 }
             );
 

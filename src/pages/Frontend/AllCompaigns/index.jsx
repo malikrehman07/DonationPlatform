@@ -48,20 +48,11 @@ const AllCompaigns = () => {
 
             return {
               ...compaign,
-
-              id: Number(blockchainData[0]),
-              ngo: blockchainData[1],
-              title: blockchainData[2],
-              description: blockchainData[3],
-
-              targetAmount: ethers.formatEther(blockchainData[4]),
-
-              raisedAmount: ethers.formatEther(blockchainData[5]),
-
-              status:
-                Number(blockchainData[6]) === 0
-                  ? "Active"
-                  : "Completed",
+              blockchainId: Number(blockchainData[0]),
+              // We keep the MongoDB raisedAmount as it includes both card & blockchain donations
+              raisedAmount: compaign.raisedAmount,
+              targetAmount: compaign.targetAmount,
+              status: compaign.status
             };
           } catch (error) {
             console.error("Blockchain fetch error:", error);
@@ -225,21 +216,16 @@ const AllCompaigns = () => {
                   <strong>Status:</strong> {compaign.status}
                 </div>
 
-                {/* =========================
-                    DONATE BUTTON
-                ========================= */}
                 <div className="mt-3">
                   <Button
                     type="primary"
                     shape="round"
                     size="large"
                     block
-                    disabled={compaign.status === "Completed"}
-                    onClick={() =>
-                      handleDonate(compaign)
-                    }
+                    disabled={compaign.status === "completed"}
+                    onClick={() => handleDonate(compaign)}
                   >
-                    {compaign.status === "Completed"
+                    {compaign.status === "completed"
                       ? "Campaign Completed"
                       : "Donate"}
                   </Button>

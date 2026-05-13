@@ -128,9 +128,9 @@ const Donations = () => {
             title: "Amount Received",
             dataIndex: "amount",
             key: "amount",
-            render: (amount, record) => (
+            render: (amount) => (
                 <strong style={{ color: "#1890ff" }}>
-                    {Number(amount || 0).toLocaleString()} {record.paymentMethod === 'crypto' ? 'MATIC' : 'USD'}
+                    {Number(amount || 0).toLocaleString()} MATIC
                 </strong>
             )
         },
@@ -157,19 +157,19 @@ const Donations = () => {
         // =========================
         // ACTIONS
         // =========================
-        {
-            title: "Action",
-            key: "action",
-            render: (_, donation) => (
-                <Button
-                    danger
-                    type="link"
-                    onClick={() => handleDelete(donation)}
-                >
-                    Delete
-                </Button>
-            )
-        }
+        // {
+        //     title: "Action",
+        //     key: "action",
+        //     render: (_, donation) => (
+        //         <Button
+        //             danger
+        //             type="link"
+        //             onClick={() => handleDelete(donation)}
+        //         >
+        //             Delete
+        //         </Button>
+        //     )
+        // }
     ];
 
     // =========================

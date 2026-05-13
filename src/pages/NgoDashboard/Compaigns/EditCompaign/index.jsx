@@ -98,6 +98,7 @@ const EditCompaign = () => {
       formData.append("title", values.title);
       formData.append("description", values.description);
       formData.append("category", values.category);
+      formData.append("targetAmount", values.amount); // Fix: Send targetAmount to backend
 
       // keep existing images + new ones
       fileList.forEach((file) => {

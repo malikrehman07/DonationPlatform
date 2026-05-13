@@ -43,9 +43,9 @@ const Donations = () => {
       dataIndex: "transactionHash",
       render: (hash) => (
         <Tooltip title={hash}>
-          <a 
-            href={`https://amoy.polygonscan.com/tx/${hash}`} 
-            target="_blank" 
+          <a
+            href={`https://amoy.polygonscan.com/tx/${hash}`}
+            target="_blank"
             rel="noopener noreferrer"
             style={{ fontFamily: "monospace" }}
           >
@@ -85,9 +85,9 @@ const Donations = () => {
     {
       title: "Amount",
       dataIndex: "amount",
-      render: (amount, record) => (
+      render: (amount) => (
         <strong style={{ color: "#1890ff" }}>
-          {Number(amount).toLocaleString()} {record.paymentMethod === 'crypto' ? 'MATIC' : 'USD'}
+          {Number(amount).toLocaleString()} MATIC
         </strong>
       )
     },
@@ -104,7 +104,7 @@ const Donations = () => {
       render: (status) => {
         const color =
           status === "Completed" ? "green" :
-          status === "Pending" ? "orange" : "red";
+            status === "Pending" ? "orange" : "red";
 
         return <Tag color={color}>{status}</Tag>;
       }

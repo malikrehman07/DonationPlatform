@@ -74,8 +74,8 @@ const CheckoutForm = () => {
 
             const tx = await contract.donate(compaign.blockchainCampaignId, {
                 value: amountInWei,
-                maxPriorityFeePerGas: ethers.parseUnits("30", "gwei"),
-                maxFeePerGas: ethers.parseUnits("40", "gwei")
+                maxPriorityFeePerGas: ethers.parseUnits("40", "gwei"),
+                maxFeePerGas: ethers.parseUnits("60", "gwei")
             });
 
             message.loading({ content: "Waiting for blockchain confirmation...", key: "payment" });
@@ -173,7 +173,19 @@ const CheckoutForm = () => {
             await axios.post("http://localhost:5000/donations/create", donationData);
 
             message.success({ content: "Donation Confirmed! Thank you.", key: "payment" });
-            navigate("/thank-you");
+            
+            navigate("/thank-you", {
+                state: {
+                    donationData: {
+                        amount: maticAmount,
+                        txHash: paymentResult.txHash,
+                        paymentMethod: paymentMethod,
+                        compaign: compaign,
+                        status: paymentResult.status,
+                        explorerUrl: `https://amoy.polygonscan.com/tx/${paymentResult.txHash}`
+                    }
+                }
+            });
 
         } catch (err) {
             console.error(err);

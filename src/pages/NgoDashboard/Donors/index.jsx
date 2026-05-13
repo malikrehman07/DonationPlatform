@@ -9,28 +9,26 @@ const Donors = () => {
 
   const { user } = useAuthContext();
 
-  const [donations, setDonations] = useState([]);
+  const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // =========================
   // FETCH DONORS
   // =========================
   useEffect(() => {
-
-    const fetchDonations = async () => {
+    const fetchDonors = async () => {
       try {
-
         const token = localStorage.getItem("token");
+        if (!user?._id) return;
 
         const res = await axios.get(
-          "http://localhost:5000/dashboard/donations",
+          `http://localhost:5000/donations/ngo-donors/${user._id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
 
-        setDonations(res.data.donations || []);
-
+        setDonors(res.data.donors || []);
       } catch (err) {
         console.error("Error fetching donors:", err);
       } finally {
@@ -38,88 +36,51 @@ const Donors = () => {
       }
     };
 
-    fetchDonations();
-
-  }, []);
+    fetchDonors();
+  }, [user]);
 
   // =========================
   // TABLE COLUMNS
   // =========================
   const columns = [
-
     {
       title: "Donor Name",
-      key: "fullName",
-      render: (_, record) => (
-        record.isAnonymous
-          ? <Tag color="default">Anonymous</Tag>
-          : record.fullName || "Anonymous"
-      )
+      dataIndex: "name",
+      key: "name",
+      render: (name) => name || <Tag color="default">Anonymous</Tag>
     },
-
     {
       title: "Email",
+      dataIndex: "email",
       key: "email",
-      render: (_, record) => (
-        record.isAnonymous
-          ? "Hidden"
-          : record.email || "-"
-      )
+      render: (email) => email || "Hidden"
     },
-
     {
       title: "Phone",
-      key: "phoneNo",
-      render: (_, record) => (
-        record.isAnonymous
-          ? "Hidden"
-          : record.phoneNo || "-"
-      )
+      dataIndex: "phone",
+      key: "phone",
+      render: (phone) => phone || "Hidden"
     },
-
     {
-      title: "City",
-      key: "city",
-      render: (_, record) => (
-        record.isAnonymous
-          ? "Hidden"
-          : record.city || "-"
-      )
-    },
-
-    {
-      title: "Campaign",
-      key: "campaign",
-      render: (_, record) => (
-        record.compaign?.title || "Unknown Campaign"
-      )
-    },
-
-    {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
+      title: "Total Donated",
+      dataIndex: "totalDonated",
+      key: "totalDonated",
       render: (amount) => (
-        <b>${Number(amount || 0).toLocaleString()}</b>
+        <b style={{ color: "#52c41a" }}>{Number(amount || 0).toLocaleString()} MATIC</b>
       )
     },
-
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const color =
-          status === "Completed"
-            ? "green"
-            : status === "Pending"
-              ? "orange"
-              : "red";
-
-        return <Tag color={color}>{status}</Tag>;
-      }
+      title: "Times Donated",
+      dataIndex: "donationCount",
+      key: "donationCount",
+      render: (count) => <Tag color="blue">{count} times</Tag>
+    },
+    {
+      title: "Last Donation",
+      dataIndex: "lastDonation",
+      key: "lastDonation",
+      render: (date) => new Date(date).toLocaleDateString()
     }
-
   ];
 
   // =========================
@@ -140,25 +101,23 @@ const Donors = () => {
 
   return (
     <div className="dashboard-content">
-
-      <Row>
+      <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Title level={2} className="text-center">
-            NGO Donors List
-          </Title>
+          <Title level={2}>Donor Insights</Title>
+          <p className="text-secondary">Track who is supporting your campaigns.</p>
         </Col>
 
         <Col span={24}>
           <Table
             rowKey="_id"
             columns={columns}
-            dataSource={donations}
+            dataSource={donors}
             pagination={{ pageSize: 8 }}
             scroll={{ x: "max-content" }}
+            className="shadow-sm border rounded-3"
           />
         </Col>
       </Row>
-
     </div>
   );
 };

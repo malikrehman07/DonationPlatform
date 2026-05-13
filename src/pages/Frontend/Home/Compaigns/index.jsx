@@ -54,7 +54,7 @@ const Compaigns = () => {
                     </Col>
                 ) : (
                     compaigns.slice(0, 4).map((compaign) => {
-                        const raised = compaignTotals[compaign._id] || 0;
+                        const raised = compaign.raisedAmount || 0;
                         const percent = Math.min(
                             (raised / (compaign.targetAmount || 1)) * 100,
                             100
