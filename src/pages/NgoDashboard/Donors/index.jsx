@@ -28,7 +28,7 @@ const Donors = () => {
 
         // 1. Fetch all donations for this NGO from MongoDB
         const res = await axios.get(
-          `http://localhost:5000/donations/ngo/${userId}`,
+          `https://apigivehopes.vercel.app/donations/ngo/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const mongoDonations = res.data.donations || [];

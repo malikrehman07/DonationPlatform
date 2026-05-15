@@ -26,7 +26,7 @@ const Payout = () => {
     try {
       if (!user?._id) return;
       const token = localStorage.getItem("token");
-      const res = await axios.get(`http://localhost:5000/ngo/withdrawal/history/${user._id}`, {
+      const res = await axios.get(`https://apigivehopes.vercel.app/ngo/withdrawal/history/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(res.data.history || []);
@@ -50,7 +50,7 @@ const Payout = () => {
       setWallet(walletAddress);
 
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5000/ngo/connect-wallet", { walletAddress }, {
+      await axios.put("https://apigivehopes.vercel.app/ngo/connect-wallet", { walletAddress }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -101,7 +101,7 @@ const Payout = () => {
 
       // Record in Backend History
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/ngo/withdrawal/record", {
+      await axios.post("https://apigivehopes.vercel.app/ngo/withdrawal/record", {
         amount: Number(balance),
         walletAddress: wallet,
         transactionHash: receipt.hash

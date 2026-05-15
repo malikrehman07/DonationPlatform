@@ -29,7 +29,7 @@ const Settings = () => {
                 const token = localStorage.getItem("token");
 
                 const res = await axios.get(
-                    "http://localhost:5000/auth/user",
+                    "https://apigivehopes.vercel.app/auth/user",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
@@ -121,7 +121,7 @@ const Settings = () => {
             formData.append("status", "under_review");
 
             await axios.put(
-                `http://localhost:5000/ngo/settings/${currentUser._id}`,
+                `https://apigivehopes.vercel.app/ngo/settings/${currentUser._id}`,
                 formData,
                 {
                     headers: {

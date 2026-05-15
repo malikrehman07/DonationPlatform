@@ -147,7 +147,7 @@ const CheckoutForm = () => {
                     status: paymentResult.status
                 };
 
-                await axios.post("http://localhost:5000/donations/create", donationData);
+                await axios.post("https://apigivehopes.vercel.app/donations/create", donationData);
             } else {
                 // CARD PATH - Call the Backend Simulated Fiat-to-Crypto Bridge
                 await handleCardPayment(); // Wait for user to fill modal
@@ -167,7 +167,7 @@ const CheckoutForm = () => {
                     isAnonymous: isAnonymous
                 };
 
-                const res = await axios.post("http://localhost:5000/donations/card-payment", cardDonationData);
+                const res = await axios.post("https://apigivehopes.vercel.app/donations/card-payment", cardDonationData);
                 paymentResult = {
                     txHash: res.data.transactionHash,
                     status: "Completed"

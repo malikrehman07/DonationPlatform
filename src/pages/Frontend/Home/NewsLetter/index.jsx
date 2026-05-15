@@ -16,7 +16,7 @@ const NewsLetter = () => {
         
         try {
             setLoading(true);
-            const res = await axios.post("http://localhost:5000/newsletter/subscribe", { email });
+            const res = await axios.post("https://apigivehopes.vercel.app/newsletter/subscribe", { email });
 
             if (res.data?.success) {
                 window.notify(res.data?.message || "Subscribed successfully! 🎉", 'success');

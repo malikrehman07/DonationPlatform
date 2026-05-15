@@ -38,7 +38,7 @@ const AllCompaigns = () => {
 
       // 1. Fetch from MongoDB
       const compRes = await axios.get(
-        `http://localhost:5000/compaigns/my/${userId}`,
+        `https://apigivehopes.vercel.app/compaigns/my/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

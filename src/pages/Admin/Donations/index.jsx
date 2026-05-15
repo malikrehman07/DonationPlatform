@@ -23,12 +23,12 @@ const Donations = () => {
         const contract = getReadOnlyContract();
         
         // 1. Get All Campaigns for Title Mapping
-        const compRes = await axios.get("http://localhost:5000/compaigns/read");
+        const compRes = await axios.get("https://apigivehopes.vercel.app/compaigns/read");
         const allCampaigns = compRes.data.compaigns || [];
 
         // 2. Fetch Full History from MongoDB (Base)
         const res = await axios.get(
-          "http://localhost:5000/donations/all",
+          "https://apigivehopes.vercel.app/donations/all",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const mongoDonations = res.data.donations || [];

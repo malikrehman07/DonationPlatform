@@ -86,7 +86,7 @@ const NgoDashboard = () => {
             setLoading(true);
             try {
                 const res = await axios.get(
-                    `http://localhost:5000/compaigns/search?query=${searchQuery}&ngoId=${user?._id}`
+                    `https://apigivehopes.vercel.app/compaigns/search?query=${searchQuery}&ngoId=${user?._id}`
                 );
                 setResults(res.data.compaigns || []);
             } catch (err) {

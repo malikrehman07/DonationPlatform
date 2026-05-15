@@ -23,7 +23,7 @@ const Compaigns = () => {
             setLoading(true);
 
             // 1. Fetch from MongoDB
-            const res = await axios.get("http://localhost:5000/compaigns/read");
+            const res = await axios.get("https://apigivehopes.vercel.app/compaigns/read");
             const mongoCampaigns = res.data.compaigns || [];
 
             // 2. Sync with Blockchain

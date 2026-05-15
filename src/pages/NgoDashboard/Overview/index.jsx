@@ -29,7 +29,7 @@ const Overview = () => {
 
         // 1. Fetch campaigns to get blockchain IDs
         const compRes = await axios.get(
-          `http://localhost:5000/compaigns/my/${user._id}`,
+          `https://apigivehopes.vercel.app/compaigns/my/${user._id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -56,7 +56,7 @@ const Overview = () => {
 
         // 3. Use MongoDB for the count (or fetch from events if needed)
         const statsRes = await axios.get(
-            `http://localhost:5000/donations/stats?ngoId=${user._id}`,
+            `https://apigivehopes.vercel.app/donations/stats?ngoId=${user._id}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
         const donationCount = statsRes.data.stats.totalDonationCount || 0;

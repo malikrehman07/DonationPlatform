@@ -27,7 +27,7 @@ const Donations = () => {
                 
                 // 1. Get NGO's Campaigns for Title Mapping
                 const compRes = await axios.get(
-                    `http://localhost:5000/compaigns/my/${userId}`,
+                    `https://apigivehopes.vercel.app/compaigns/my/${userId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 const myCampaigns = compRes.data.compaigns || [];
@@ -35,7 +35,7 @@ const Donations = () => {
 
                 // 2. Fetch Full History from MongoDB (Base)
                 const mongoRes = await axios.get(
-                    `http://localhost:5000/donations/ngo/${userId}`,
+                    `https://apigivehopes.vercel.app/donations/ngo/${userId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 const mongoDonations = mongoRes.data.donations || [];
@@ -116,7 +116,7 @@ const Donations = () => {
         try {
             const token = localStorage.getItem("token");
             await axios.delete(
-                `http://localhost:5000/dashboard/delete/${donation._id}`,
+                `https://apigivehopes.vercel.app/dashboard/delete/${donation._id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`

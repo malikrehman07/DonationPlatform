@@ -26,7 +26,7 @@ const AllCompaigns = () => {
       // FETCH MONGODB DATA
       // =========================
       const response = await axios.get(
-        "http://localhost:5000/compaigns/read"
+        "https://apigivehopes.vercel.app/compaigns/read"
       );
 
       const mongoCampaigns = response.data.compaigns || [];

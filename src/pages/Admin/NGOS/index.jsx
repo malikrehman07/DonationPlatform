@@ -31,7 +31,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        `http://localhost:5000/admin/ngos`,
+        `https://apigivehopes.vercel.app/admin/ngos`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -97,7 +97,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:5000/admin/ngos/approve/${id}`,
+        `https://apigivehopes.vercel.app/admin/ngos/approve/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -121,7 +121,7 @@ const NGOs = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:5000/admin/ngos/reject/${id}`,
+        `https://apigivehopes.vercel.app/admin/ngos/reject/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -149,7 +149,7 @@ const NGOs = () => {
     const token = localStorage.getItem("token");
 
     await axios.put(
-      `http://localhost:5000/admin/ngos/${ngoId}/status`,
+      `https://apigivehopes.vercel.app/admin/ngos/${ngoId}/status`,
       { status },
       {
         headers: {

@@ -40,7 +40,7 @@ const CompaignPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`http://localhost:5000/compaigns/read/${id}`);
+        const res = await axios.get(`https://apigivehopes.vercel.app/compaigns/read/${id}`);
         const mongoCampaign = res.data.compaign;
 
         const contract = getReadOnlyContract();
@@ -66,7 +66,7 @@ const CompaignPage = () => {
         const allEvents = await contract.queryFilter(filter, -10000); 
         const events = allEvents.filter(evt => Number(evt.args.campaignId) === Number(mongoCampaign.blockchainCampaignId));
 
-        const mongoDonorRes = await axios.get(`http://localhost:5000/donations/campaign/${mongoCampaign._id}`);
+        const mongoDonorRes = await axios.get(`https://apigivehopes.vercel.app/donations/campaign/${mongoCampaign._id}`);
         const mongoDonations = mongoDonorRes.data.donations || [];
 
         const syncedDonors = events.map(evt => {
