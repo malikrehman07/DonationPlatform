@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Table, Tag, Typography, Avatar, Spin, Tooltip } from "antd";
 import axios from "axios";
 
+import { getReadOnlyContract } from "../../../blockchain/config";
+import { ethers } from "ethers";
+
 const { Title } = Typography;
 
 const Donations = () => {
@@ -9,24 +12,91 @@ const Donations = () => {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // =========================
+  // FETCH DONATIONS (PERMANENT HYBRID HISTORY)
+  // =========================
   useEffect(() => {
 
     const fetchDonations = async () => {
       try {
         const token = localStorage.getItem("token");
+        const contract = getReadOnlyContract();
+        
+        // 1. Get All Campaigns for Title Mapping
+        const compRes = await axios.get("http://localhost:5000/compaigns/read");
+        const allCampaigns = compRes.data.compaigns || [];
+
+        // 2. Fetch Full History from MongoDB (Base)
         const res = await axios.get(
           "http://localhost:5000/donations/all",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        const mongoDonations = res.data.donations || [];
 
-        setDonations(res.data.donations || []);
+        // 3. Scan Recent Blocks
+        const filter = contract.filters.DonationReceived();
+        const recentEvents = await contract.queryFilter(filter, -1000);
+        const bcMap = {};
+        recentEvents.forEach(e => {
+            bcMap[e.transactionHash.toLowerCase()] = ethers.formatEther(e.args.amount);
+        });
+
+        // 4. Verification Engine for Entire History
+        const verifiedHistory = await Promise.all(mongoDonations.map(async (d) => {
+            try {
+                // Priority 1: Recent scan
+                let verifiedAmount = bcMap[d.transactionHash?.toLowerCase()];
+                
+                // Priority 2: Direct Tx fetch for older history
+                if (!verifiedAmount && d.transactionHash) {
+                    const tx = await contract.provider.getTransaction(d.transactionHash);
+                    if (tx) verifiedAmount = ethers.formatEther(tx.value);
+                }
+
+                if (verifiedAmount) {
+                    const bcId = Number(d.campaign?.blockchainCampaignId || 0);
+                    const campaignMatch = allCampaigns.find(c => c._id === d.campaign?._id);
+
+                    return {
+                        ...d,
+                        amount: parseFloat(verifiedAmount).toFixed(2),
+                        isVerified: true
+                    };
+                }
+            } catch (err) {
+                console.warn("Admin history verification failed for:", d.transactionHash);
+            }
+            return { ...d, isVerified: false };
+        }));
+
+        // 5. Add "Direct" donations from recent scan not in MongoDB
+        const directDonations = recentEvents
+            .filter(evt => !mongoDonations.some(d => d.transactionHash?.toLowerCase() === evt.transactionHash.toLowerCase()))
+            .map(evt => {
+                const bcId = Number(evt.args.campaignId);
+                const campaignMatch = allCampaigns.find(c => c.blockchainCampaignId === bcId);
+                return {
+                    _id: evt.transactionHash,
+                    transactionHash: evt.transactionHash,
+                    amount: parseFloat(ethers.formatEther(evt.args.amount)).toFixed(2),
+                    donorName: "Direct Wallet Donor",
+                    donorEmail: "N/A",
+                    ngo: {
+                        organizationName: campaignMatch?.createdBy?.organizationName || "Unknown NGO"
+                    },
+                    campaign: {
+                        title: campaignMatch?.title || `Campaign #${bcId}`
+                    },
+                    createdAt: new Date().toISOString(),
+                    status: "Completed",
+                    isVerified: true
+                };
+            });
+
+        setDonations([...verifiedHistory, ...directDonations].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
       } catch (err) {
-        console.error("Error fetching donations:", err);
+        console.error("Error fetching admin permanent donations:", err);
       } finally {
         setLoading(false);
       }
@@ -100,13 +170,23 @@ const Donations = () => {
 
     {
       title: "Status",
-      dataIndex: "status",
-      render: (status) => {
+      key: "status",
+      render: (_, record) => {
+        const status = record.status;
         const color =
           status === "Completed" ? "green" :
             status === "Pending" ? "orange" : "red";
 
-        return <Tag color={color}>{status}</Tag>;
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <Tag color={color} style={{ margin: 0 }}>{status}</Tag>
+                {record.isVerified && (
+                    <Tag color="cyan" style={{ margin: 0, fontSize: "10px" }}>
+                        BLOCKCHAIN VERIFIED
+                    </Tag>
+                )}
+            </div>
+        );
       }
     }
 

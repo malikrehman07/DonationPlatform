@@ -5,38 +5,21 @@ import axios from 'axios';
 import { useAuthContext } from '../../../context/Auth';
 import Donations from '../Donations';
 
+import { getReadOnlyContract } from '../../../blockchain/config';
+import { ethers } from 'ethers';
+
 const { Title, Text } = Typography;
 
 const Overview = () => {
-
   const { user } = useAuthContext();
 
-  const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [thisMonthTotal, setThisMonthTotal] = useState(0);
-  const [lastMonthTotal, setLastMonthTotal] = useState(0);
   const [lifetimeTotal, setLifetimeTotal] = useState(0);
   const [averageDonation, setAverageDonation] = useState(0);
 
   // =========================
-  // BLOCK ACCESS IF NOT Approved
-  // =========================
-  if (user?.role === "Ngo" && user?.status !== "approved") {
-    return (
-      <div className="p-4">
-        <Alert
-          type="warning"
-          showIcon
-          message="Account Not Verified"
-          description="Your NGO is currently under review. You cannot access donation analytics until admin verification is completed."
-        />
-      </div>
-    );
-  }
-
-  // =========================
-  // FETCH DONATIONS
+  // FETCH STATS (SYNCHRONIZED WITH BLOCKCHAIN)
   // =========================
   useEffect(() => {
     const fetchStats = async () => {
@@ -44,21 +27,47 @@ const Overview = () => {
         const token = localStorage.getItem("token");
         if (!user?._id) return;
 
-        const res = await axios.get(
-          `http://localhost:5000/donations/stats?ngoId=${user._id}`,
+        // 1. Fetch campaigns to get blockchain IDs
+        const compRes = await axios.get(
+          `http://localhost:5000/compaigns/my/${user._id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
 
-        const { stats } = res.data;
-        setLifetimeTotal(stats.totalDonations);
-        setThisMonthTotal(stats.totalDonations); // Simplified for demo
-        setAverageDonation((stats.totalDonations / (stats.totalDonationCount || 1)).toFixed(2));
-        setLastMonthTotal(0);
+        const myCampaigns = compRes.data.compaigns || [];
+        const contract = getReadOnlyContract();
 
-      } catch (err) {
-        console.error("Donation fetch error:", err);
+        // 2. Fetch Permanent Totals from Smart Contract Storage
+        let totalRaisedWei = BigInt(0);
+        let totalDonationCount = 0;
+
+        await Promise.all(myCampaigns.map(async (c) => {
+          try {
+            if (c.blockchainCampaignId !== undefined) {
+              const blockchainData = await contract.getCampaign(c.blockchainCampaignId);
+              // raisedAmount is index 5
+              totalRaisedWei += BigInt(blockchainData[5]);
+            }
+          } catch (e) {
+            console.error("Blockchain fetch error for campaign:", c._id);
+          }
+        }));
+
+        // 3. Use MongoDB for the count (or fetch from events if needed)
+        const statsRes = await axios.get(
+            `http://localhost:5000/donations/stats?ngoId=${user._id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const donationCount = statsRes.data.stats.totalDonationCount || 0;
+
+        const totalMATIC = Number(ethers.formatEther(totalRaisedWei)).toFixed(2);
+        setLifetimeTotal(totalMATIC);
+        setThisMonthTotal(totalMATIC); 
+        setAverageDonation((totalMATIC / (donationCount || 1)).toFixed(2));
+
+       } catch (err) {
+        console.error("Stats fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -66,34 +75,6 @@ const Overview = () => {
 
     fetchStats();
   }, [user]);
-
-  // =========================
-  // GROWTH CALCULATION
-  // =========================
-  const calcGrowth = (current, previous) => {
-    if (previous === 0) {
-      return {
-        percent: "+100%",
-        arrow: <ArrowUpOutlined style={{ color: "green" }} />
-      };
-    }
-
-    const diff = current - previous;
-    const percent = ((diff / previous) * 100).toFixed(1);
-
-    return diff >= 0
-      ? {
-          percent: `+${percent}%`,
-          arrow: <ArrowUpOutlined style={{ color: "green" }} />
-        }
-      : {
-          percent: `${percent}%`,
-          arrow: <ArrowDownOutlined style={{ color: "red" }} />
-        };
-  };
-
-  const monthlyGrowth = calcGrowth(thisMonthTotal, lastMonthTotal);
-  const lifetimeGrowth = calcGrowth(lifetimeTotal, lastMonthTotal);
 
   // =========================
   // LOADING STATE

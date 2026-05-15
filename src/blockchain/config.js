@@ -29,7 +29,7 @@ export const getContract = async () => {
 };
 
 export const getReadOnlyContract = () => {
-  const provider = new ethers.JsonRpcProvider("https://rpc-amoy.polygon.technology/");
+  const provider = new ethers.JsonRpcProvider("https://polygon-amoy-bor-rpc.publicnode.com");
   
   return new ethers.Contract(
     CONTRACT_ADDRESS,

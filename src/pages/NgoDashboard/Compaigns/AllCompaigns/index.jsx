@@ -1,21 +1,28 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Space, Row, Col, Typography, Spin, Table, Image } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthContext } from '../../../../context/Auth';
+
+import { getReadOnlyContract } from '../../../../blockchain/config';
+import { ethers } from 'ethers';
+import { Tag } from 'antd';
 
 const { Title } = Typography;
 
 const AllCompaigns = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [compaigns, setCompaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [compaignTotals, setCompaignTotals] = useState({});
+
+  const searchParams = new URLSearchParams(location.search);
+  const highlightId = searchParams.get("highlight");
 
   // =========================
-  // FETCH NGO CAMPAIGNS
+  // FETCH NGO CAMPAIGNS (SYNCHRONIZED WITH BLOCKCHAIN)
   // =========================
   const getCompaigns = useCallback(async () => {
     const userId = user?.uid || user?._id;
@@ -29,6 +36,7 @@ const AllCompaigns = () => {
     try {
       const token = localStorage.getItem("token");
 
+      // 1. Fetch from MongoDB
       const compRes = await axios.get(
         `http://localhost:5000/compaigns/my/${userId}`,
         {
@@ -36,11 +44,40 @@ const AllCompaigns = () => {
         }
       );
 
-      setCompaigns(compRes.data.compaigns || []);
+      const mongoCampaigns = compRes.data.compaigns || [];
+      
+      // 2. Sync with Blockchain
+      const contract = getReadOnlyContract();
+      
+      const syncedCampaigns = await Promise.all(
+        mongoCampaigns.map(async (c) => {
+          try {
+            if (c.blockchainCampaignId !== undefined) {
+              const blockchainData = await contract.getCampaign(c.blockchainCampaignId);
+              // blockchainData[5] is raisedAmount, [4] is targetAmount
+              const raisedOnChain = ethers.formatEther(blockchainData[5]);
+              const targetOnChain = ethers.formatEther(blockchainData[4]);
+              
+              return {
+                ...c,
+                title: blockchainData[2] || c.title,
+                raisedAmount: parseFloat(raisedOnChain).toFixed(2),
+                targetAmount: parseFloat(targetOnChain).toFixed(2),
+                status: Number(raisedOnChain) >= Number(targetOnChain) ? "completed" : c.status
+              };
+            }
+            return c;
+          } catch (err) {
+            console.error(`Error syncing campaign ${c._id}:`, err);
+            return c;
+          }
+        })
+      );
+
+      setCompaigns(syncedCampaigns);
 
     } catch (err) {
       console.error("Error fetching campaigns:", err);
-      window.notify?.("Failed to load campaigns", "error");
     } finally {
       setLoading(false);
     }
@@ -101,19 +138,19 @@ const AllCompaigns = () => {
       title: "Status",
       dataIndex: "status",
       render: (status) => {
-        if (!status) return "Active";
+        let color = "blue";
+        let text = status || "active";
 
-        const color =
-          status === "approved"
-            ? "green"
-            : status === "pending"
-              ? "orange"
-              : "red";
+        if (text === "completed") color = "success";
+        if (text === "active") color = "processing";
+        if (text === "approved") color = "success";
+        if (text === "pending") color = "warning";
+        if (text === "rejected") color = "error";
 
         return (
-          <span style={{ color, fontWeight: 500 }}>
-            {status.toUpperCase()}
-          </span>
+          <Tag color={color} style={{ borderRadius: 10, padding: "0 10px", fontWeight: 600 }}>
+            {text.toUpperCase()}
+          </Tag>
         );
       }
     },
@@ -156,9 +193,7 @@ const AllCompaigns = () => {
 
   return (
     <div className="dashboard-content">
-
       <Row>
-
         <Col span={24}>
           <Title level={2} style={{ textAlign: "center" }}>
             My Campaigns
@@ -172,6 +207,7 @@ const AllCompaigns = () => {
             dataSource={compaigns}
             pagination={{ pageSize: 8 }}
             scroll={{ x: "max-content" }}
+            rowClassName={(record) => record._id === highlightId ? 'highlight-row' : ''}
           />
         </Col>
 

@@ -3,6 +3,9 @@ import { Table, Tag, Typography, Button, Avatar, Spin, Tooltip } from "antd";
 import axios from "axios";
 import { useAuthContext } from "../../../context/Auth";
 
+import { getReadOnlyContract } from "../../../blockchain/config";
+import { ethers } from "ethers";
+
 const { Title } = Typography;
 
 const Donations = () => {
@@ -11,7 +14,7 @@ const Donations = () => {
     const [loading, setLoading] = useState(true);
 
     // =========================
-    // FETCH DONATIONS
+    // FETCH DONATIONS (PERMANENT HYBRID HISTORY)
     // =========================
     useEffect(() => {
         const fetchDonations = async () => {
@@ -20,19 +23,83 @@ const Donations = () => {
 
             try {
                 const token = localStorage.getItem("token");
-                const res = await axios.get(
-                    `http://localhost:5000/donations/ngo/${userId}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
+                const contract = getReadOnlyContract();
+                
+                // 1. Get NGO's Campaigns for Title Mapping
+                const compRes = await axios.get(
+                    `http://localhost:5000/compaigns/my/${userId}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
+                const myCampaigns = compRes.data.compaigns || [];
+                const myBcIds = myCampaigns.map(c => c.blockchainCampaignId).filter(id => id !== undefined);
 
-                setDonations(res.data.donations || []);
+                // 2. Fetch Full History from MongoDB (Base)
+                const mongoRes = await axios.get(
+                    `http://localhost:5000/donations/ngo/${userId}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                const mongoDonations = mongoRes.data.donations || [];
+
+                // 3. Scan Recent Blocks for "Direct" or "Live" events
+                const filter = contract.filters.DonationReceived();
+                const recentEvents = await contract.queryFilter(filter, -1000); 
+
+                // 4. Verification Engine for Entire History
+                const verifiedHistory = await Promise.all(mongoDonations.map(async (d) => {
+                    try {
+                        // Priority 1: Check recent events scan
+                        const recentMatch = recentEvents.find(e => e.transactionHash.toLowerCase() === d.transactionHash?.toLowerCase());
+                        if (recentMatch) {
+                            return {
+                                ...d,
+                                amount: parseFloat(ethers.formatEther(recentMatch.args.amount)).toFixed(2),
+                                isVerified: true
+                            };
+                        }
+
+                        // Priority 2: Direct on-chain verification for historical transactions
+                        if (d.transactionHash) {
+                            const tx = await contract.provider.getTransaction(d.transactionHash);
+                            if (tx) {
+                                return {
+                                    ...d,
+                                    amount: parseFloat(ethers.formatEther(tx.value)).toFixed(2),
+                                    isVerified: true
+                                };
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("Verification failed for history item:", d.transactionHash);
+                    }
+                    return { ...d, isVerified: false };
+                }));
+
+                // 5. Add "Direct Wallet" donations found in scan but NOT in Mongo
+                const directDonations = recentEvents
+                    .filter(evt => {
+                        const bcId = Number(evt.args.campaignId);
+                        const isNgoCampaign = myBcIds.includes(bcId);
+                        const existsInMongo = mongoDonations.some(d => d.transactionHash?.toLowerCase() === evt.transactionHash.toLowerCase());
+                        return isNgoCampaign && !existsInMongo;
+                    })
+                    .map(evt => ({
+                        _id: evt.transactionHash,
+                        transactionHash: evt.transactionHash,
+                        amount: parseFloat(ethers.formatEther(evt.args.amount)).toFixed(2),
+                        donorName: "Direct Wallet Donor",
+                        donorEmail: "N/A",
+                        campaign: {
+                            title: myCampaigns.find(c => c.blockchainCampaignId === Number(evt.args.campaignId))?.title || `Campaign #${evt.args.campaignId}`
+                        },
+                        createdAt: new Date().toISOString(),
+                        status: "Completed",
+                        isVerified: true
+                    }));
+
+                setDonations([...verifiedHistory, ...directDonations].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
             } catch (err) {
-                console.error("Error fetching donations:", err);
+                console.error("Error fetching permanent donations:", err);
             } finally {
                 setLoading(false);
             }
@@ -140,9 +207,9 @@ const Donations = () => {
         // =========================
         {
             title: "Status",
-            dataIndex: "status",
             key: "status",
-            render: (status) => {
+            render: (_, record) => {
+                const status = record.status;
                 let color =
                     status === "Completed"
                         ? "green"
@@ -150,7 +217,16 @@ const Donations = () => {
                             ? "orange"
                             : "red";
 
-                return <Tag color={color}>{status}</Tag>;
+                return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <Tag color={color} style={{ margin: 0 }}>{status}</Tag>
+                        {record.isVerified && (
+                            <Tag color="cyan" style={{ margin: 0, fontSize: "10px" }}>
+                                BLOCKCHAIN VERIFIED
+                            </Tag>
+                        )}
+                    </div>
+                );
             }
         },
 

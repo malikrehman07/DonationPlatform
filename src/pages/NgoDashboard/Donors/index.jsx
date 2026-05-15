@@ -3,6 +3,9 @@ import { Col, Row, Spin, Typography, Table, Tag } from 'antd';
 import { useAuthContext } from '../../../context/Auth';
 import axios from 'axios';
 
+import { getReadOnlyContract } from '../../../blockchain/config';
+import { ethers } from 'ethers';
+
 const { Title } = Typography;
 
 const Donors = () => {
@@ -13,24 +16,75 @@ const Donors = () => {
   const [loading, setLoading] = useState(true);
 
   // =========================
-  // FETCH DONORS
+  // FETCH DONORS (HYBRID: METADATA FROM MONGO, AMOUNT FROM BLOCKCHAIN)
   // =========================
   useEffect(() => {
     const fetchDonors = async () => {
       try {
+        const userId = user?._id || user?.uid;
+        if (!userId) return;
         const token = localStorage.getItem("token");
-        if (!user?._id) return;
+        const contract = getReadOnlyContract();
 
+        // 1. Fetch all donations for this NGO from MongoDB
         const res = await axios.get(
-          `http://localhost:5000/donations/ngo-donors/${user._id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          `http://localhost:5000/donations/ngo/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        const mongoDonations = res.data.donations || [];
 
-        setDonors(res.data.donors || []);
+        // 2. Fetch all unique blockchain events to map amounts
+        const filter = contract.filters.DonationReceived();
+        const events = await contract.queryFilter(filter, -2000); 
+        const bcMap = {};
+        events.forEach(e => {
+            bcMap[e.transactionHash.toLowerCase()] = ethers.formatEther(e.args.amount);
+        });
+
+        // 3. Group and Verify
+        const donorGroups = {};
+        
+        await Promise.all(mongoDonations.map(async (d) => {
+            const email = d.donorEmail || "anonymous@givehope.org";
+            if (!donorGroups[email]) {
+                donorGroups[email] = {
+                    _id: email,
+                    name: d.donorName,
+                    email: d.donorEmail,
+                    phone: d.phoneNo,
+                    totalDonated: 0,
+                    donationCount: 0,
+                    lastDonation: d.createdAt,
+                    wallet: d.transactionHash // Just as a reference
+                };
+            }
+
+            // Get Amount from Blockchain (Prefer Event scan, fallback to Direct Tx fetch)
+            let verifiedAmount = bcMap[d.transactionHash?.toLowerCase()];
+            if (!verifiedAmount && d.transactionHash) {
+                try {
+                    const tx = await contract.provider.getTransaction(d.transactionHash);
+                    if (tx) verifiedAmount = ethers.formatEther(tx.value);
+                } catch (e) { console.warn("BC Fetch failed for tx", d.transactionHash); }
+            }
+
+            const amountNum = parseFloat(verifiedAmount || d.amount || 0);
+            donorGroups[email].totalDonated += amountNum;
+            donorGroups[email].donationCount += 1;
+            if (new Date(d.createdAt) > new Date(donorGroups[email].lastDonation)) {
+                donorGroups[email].lastDonation = d.createdAt;
+            }
+        }));
+
+        const donorList = Object.values(donorGroups).map(d => ({
+            ...d,
+            totalDonated: d.totalDonated.toFixed(2)
+        }));
+
+        setDonors(donorList.sort((a, b) => b.totalDonated - a.totalDonated));
+
       } catch (err) {
-        console.error("Error fetching donors:", err);
+        console.error("Error fetching hybrid donors:", err);
       } finally {
         setLoading(false);
       }
@@ -39,35 +93,37 @@ const Donors = () => {
     fetchDonors();
   }, [user]);
 
-  // =========================
-  // TABLE COLUMNS
-  // =========================
   const columns = [
     {
       title: "Donor Name",
       dataIndex: "name",
       key: "name",
-      render: (name) => name || <Tag color="default">Anonymous</Tag>
+      render: (name) => <strong>{name || "Anonymous"}</strong>
     },
     {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      render: (email) => email || "Hidden"
+      title: "Contact Info",
+      key: "contact",
+      render: (_, record) => (
+        <div>
+          <div style={{ fontSize: 12, color: "#8c8c8c" }}>{record.email}</div>
+          <div style={{ fontSize: 11, color: "#bfbfbf" }}>{record.phone}</div>
+        </div>
+      )
     },
     {
-      title: "Phone",
-      dataIndex: "phone",
-      key: "phone",
-      render: (phone) => phone || "Hidden"
-    },
-    {
-      title: "Total Donated",
+      title: "Total Donated (On-Chain)",
       dataIndex: "totalDonated",
       key: "totalDonated",
       render: (amount) => (
-        <b style={{ color: "#52c41a" }}>{Number(amount || 0).toLocaleString()} MATIC</b>
+        <Tag color="green" style={{ fontSize: 14 }}>
+          <b>{amount} MATIC</b>
+        </Tag>
       )
+    },
+    {
+      title: "Last Activity",
+      dataIndex: "lastDonation",
+      render: (date) => new Date(date).toLocaleDateString()
     },
     {
       title: "Times Donated",
@@ -76,10 +132,9 @@ const Donors = () => {
       render: (count) => <Tag color="blue">{count} times</Tag>
     },
     {
-      title: "Last Donation",
-      dataIndex: "lastDonation",
-      key: "lastDonation",
-      render: (date) => new Date(date).toLocaleDateString()
+      title: "Status",
+      key: "status",
+      render: () => <Tag color="gold">BLOCKCHAIN VERIFIED</Tag>
     }
   ];
 

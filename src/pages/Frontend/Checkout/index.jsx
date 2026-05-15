@@ -99,27 +99,11 @@ const CheckoutForm = () => {
     const [isCardModalVisible, setIsCardModalVisible] = useState(false);
     
     const handleCardPayment = () => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             setIsCardModalVisible(true);
-            
-            // This promise will be resolved by the Modal's onFinish
             window.resolvePayment = (cardData) => {
-                setIsProcessing(true);
                 setIsCardModalVisible(false);
-                
-                message.loading({ content: "Authorizing with Secure Gateway...", key: "payment" });
-
-                // Simulate realistic banking delay
-                setTimeout(() => {
-                    const maticAmount = getMaticAmount();
-                    // Generate a REALISTIC looking Polygon Hash for the project
-                    const txHash = "0x" + [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
-                    
-                    resolve({
-                        txHash: txHash,
-                        status: "Completed"
-                    });
-                }, 3000);
+                resolve(cardData);
             };
         });
     };
@@ -139,38 +123,56 @@ const CheckoutForm = () => {
         }
 
         try {
+            setIsProcessing(true);
+            const maticAmount = getMaticAmount();
             let paymentResult = null;
 
             if (paymentMethod === "crypto") {
-                setIsProcessing(true);
                 paymentResult = await handleBlockchainPayment();
+                
+                // SAVE TO BACKEND (CRYPTO PATH)
+                const donationData = {
+                    campaignId: compaign._id,
+                    ngoId: compaign.createdBy,
+                    donorName: isAnonymous ? "Anonymous" : state.fullName,
+                    donorEmail: state.email,
+                    phoneNo: state.phoneNo,
+                    address: state.address,
+                    city: state.city,
+                    postalCode: state.postalCode,
+                    amount: maticAmount,
+                    isAnonymous: isAnonymous,
+                    paymentMethod: paymentMethod,
+                    transactionHash: paymentResult.txHash,
+                    status: paymentResult.status
+                };
+
+                await axios.post("http://localhost:5000/donations/create", donationData);
             } else {
-                // Card path opens the Modal and waits
-                paymentResult = await handleCardPayment();
+                // CARD PATH - Call the Backend Simulated Fiat-to-Crypto Bridge
+                await handleCardPayment(); // Wait for user to fill modal
+                
+                message.loading({ content: "Processing Secure Payment & Blockchain Bridge...", key: "payment" });
+
+                const cardDonationData = {
+                    campaignId: compaign._id,
+                    ngoId: compaign.createdBy,
+                    donorName: isAnonymous ? "Anonymous" : state.fullName,
+                    donorEmail: state.email,
+                    phoneNo: state.phoneNo,
+                    address: state.address,
+                    city: state.city,
+                    postalCode: state.postalCode,
+                    amount: maticAmount,
+                    isAnonymous: isAnonymous
+                };
+
+                const res = await axios.post("http://localhost:5000/donations/card-payment", cardDonationData);
+                paymentResult = {
+                    txHash: res.data.transactionHash,
+                    status: "Completed"
+                };
             }
-
-            // =====================
-            // SAVE TO BACKEND
-            // =====================
-            const maticAmount = getMaticAmount();
-            
-            const donationData = {
-                campaignId: compaign._id,
-                ngoId: compaign.createdBy,
-                donorName: isAnonymous ? "Anonymous" : state.fullName,
-                donorEmail: state.email,
-                phoneNo: state.phoneNo,
-                address: state.address,
-                city: state.city,
-                postalCode: state.postalCode,
-                amount: maticAmount,
-                isAnonymous: isAnonymous,
-                paymentMethod: paymentMethod,
-                transactionHash: paymentResult.txHash,
-                status: paymentResult.status
-            };
-
-            await axios.post("http://localhost:5000/donations/create", donationData);
 
             message.success({ content: "Donation Confirmed! Thank you.", key: "payment" });
             

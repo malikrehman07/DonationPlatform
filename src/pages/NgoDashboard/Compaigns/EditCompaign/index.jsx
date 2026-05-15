@@ -180,10 +180,11 @@ const EditCompaign = () => {
           <Col xs={24} md={12}>
             <Form.Item
               name="amount"
-              label="Target Amount"
+              label="Target Amount (MATIC)"
               rules={[{ required: true }]}
+              extra="Target amount cannot be changed once the campaign is on the blockchain."
             >
-              <Input type="number" />
+              <Input type="number" disabled />
             </Form.Item>
           </Col>
         </Row>

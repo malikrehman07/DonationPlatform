@@ -73,7 +73,7 @@ const Payout = () => {
       setBalanceLoading(true);
       const contract = await getContract();
       const rawBalance = await contract.ngoBalances(wallet);
-      setBalance(ethers.formatEther(rawBalance));
+      setBalance(parseFloat(ethers.formatEther(rawBalance)).toFixed(2));
     } catch (err) {
       console.error("Balance error:", err);
     } finally {

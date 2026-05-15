@@ -156,7 +156,7 @@ const Register = () => {
                                         }
                                     >
                                         <Select.Option value="Ngo">NGO</Select.Option>
-                                        <Select.Option value="Admin">Admin</Select.Option>
+                                        {/* <Select.Option value="Admin">Admin</Select.Option> */}
                                     </Select>
                                 </Form.Item>
                             </Col>

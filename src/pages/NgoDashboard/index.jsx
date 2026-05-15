@@ -86,7 +86,7 @@ const NgoDashboard = () => {
             setLoading(true);
             try {
                 const res = await axios.get(
-                    `http://localhost:5000/compaigns/search?query=${searchQuery}`
+                    `http://localhost:5000/compaigns/search?query=${searchQuery}&ngoId=${user?._id}`
                 );
                 setResults(res.data.compaigns || []);
             } catch (err) {
@@ -99,23 +99,21 @@ const NgoDashboard = () => {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    const searchMenu = (
-        <Menu>
-            {results.length === 0 && searchQuery && !loading ? (
-                <Menu.Item key="no-result">
-                    No results found
-                </Menu.Item>
-            ) : (
-                results.map(c => (
-                    <Menu.Item key={c._id} onClick={() => setResults([])}>
-                        <Link to={`/dashboard/compaign/all?highlight=${c._id}`}>
-                            {c.title}
-                        </Link>
-                    </Menu.Item>
-                ))
-            )}
-        </Menu>
-    );
+    // =========================
+    // SEARCH MENU ITEMS (Modern antd v5+)
+    // =========================
+    const searchMenuItems = {
+        items: searchQuery && results.length === 0 && !loading
+            ? [{ key: 'no-result', label: 'No results found' }]
+            : results.map(c => ({
+                key: c._id,
+                label: (
+                    <Link to={`/dashboard/compaign/all?highlight=${c._id}`} onClick={() => setResults([])}>
+                        {c.title}
+                    </Link>
+                )
+            }))
+    };
 
     // =========================
     // LOADING STATE
@@ -179,15 +177,17 @@ const NgoDashboard = () => {
 
                 <Header className="topbar d-flex justify-content-between align-items-center px-4">
 
-                    <Dropdown overlay={searchMenu} trigger={['click']} open={results.length > 0}>
-                        <Search
-                            prefix={<SearchOutlined />}
-                            placeholder="Search campaigns..."
-                            style={{ width: 300 }}
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            loading={loading}
-                        />
+                    <Dropdown menu={searchMenuItems} trigger={['click']} open={searchQuery.length > 0 && results.length > 0}>
+                        <span>
+                            <Search
+                                prefix={<SearchOutlined />}
+                                placeholder="Search campaigns..."
+                                style={{ width: 300 }}
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                loading={loading}
+                            />
+                        </span>
                     </Dropdown>
 
                     <div className="d-flex align-items-center">

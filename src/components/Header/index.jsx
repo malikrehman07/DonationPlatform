@@ -30,10 +30,10 @@ const Header = () => {
                     </ul>
                     <div>
                         {!isAuth ? (
-                            <Link to="/auth/register">
+                            <Link to="/auth/login">
                                 <UserOutlined style={{ fontSize: 22, color: "white" }} />
                             </Link>
-                        ) : user?.role === "ngo" ? (
+                        ) : user?.role === "Ngo" ? (
                             <Link to="/dashboard/overview">
                                 <UserOutlined style={{ fontSize: 22, color: "white" }} />
                             </Link>

@@ -46,16 +46,42 @@ const CompaignPage = () => {
         const contract = getReadOnlyContract();
         const blockchainData = await contract.getCampaign(mongoCampaign.blockchainCampaignId);
 
+        const raisedOnChain = ethers.formatEther(blockchainData[5]);
+        const targetOnChain = ethers.formatEther(blockchainData[4]);
+        const titleOnChain = blockchainData[2];
+        const descriptionOnChain = blockchainData[3];
+
         setCompaign({
-          ...mongoCampaign,
+          ...mongoCampaign, // Keep images and creator info
+          title: titleOnChain || mongoCampaign.title,
+          description: descriptionOnChain || mongoCampaign.description,
           blockchainId: Number(blockchainData[0]),
-          raisedAmount: mongoCampaign.raisedAmount,
-          targetAmount: mongoCampaign.targetAmount,
-          status: mongoCampaign.status,
+          raisedAmount: parseFloat(raisedOnChain).toFixed(2),
+          targetAmount: parseFloat(targetOnChain).toFixed(2),
+          status: Number(raisedOnChain) >= Number(targetOnChain) ? "completed" : mongoCampaign.status,
         });
 
-        const donorRes = await axios.get(`http://localhost:5000/donations/campaign/${mongoCampaign._id}`);
-        setDonations(donorRes.data.donations || []);
+        // Fetch Donations directly from Blockchain Events
+        const filter = contract.filters.DonationReceived();
+        const allEvents = await contract.queryFilter(filter, -10000); 
+        const events = allEvents.filter(evt => Number(evt.args.campaignId) === Number(mongoCampaign.blockchainCampaignId));
+
+        const mongoDonorRes = await axios.get(`http://localhost:5000/donations/campaign/${mongoCampaign._id}`);
+        const mongoDonations = mongoDonorRes.data.donations || [];
+
+        const syncedDonors = events.map(evt => {
+            const txHash = evt.transactionHash.toLowerCase();
+            const match = mongoDonations.find(d => d.transactionHash?.toLowerCase() === txHash);
+            return {
+                donorName: match ? (match.isAnonymous ? "Anonymous" : match.donorName) : "Wallet Donor",
+                amount: parseFloat(ethers.formatEther(evt.args.amount)).toFixed(2),
+                createdAt: new Date().toISOString(), // Mocking date or fetch from block
+                wallet: evt.args.donor,
+                txHash: txHash
+            };
+        });
+
+        setDonations(syncedDonors.reverse());
       } catch (error) {
         console.error(error);
         message.error("Failed to fetch campaign data");
@@ -80,7 +106,7 @@ const CompaignPage = () => {
 
   const raised = Number(compaign.raisedAmount);
   const target = Number(compaign.targetAmount);
-  const progress = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
+  const progress = target > 0 ? Math.min((raised / target) * 100, 100).toLocaleString() : 0;
 
   return (
     <>
@@ -163,10 +189,22 @@ const CompaignPage = () => {
               ) : (
                 donations.map((d, i) => (
                   <div key={i} className="mb-3 d-flex justify-content-between align-items-center">
-                    <div>
-                      <Text strong>{d.isAnonymous ? "Anonymous" : d.donorName}</Text>
+                    <div style={{ maxWidth: "70%" }}>
+                      <Text strong>{d.donorName}</Text>
+                      {d.donorName === "Wallet Donor" && (
+                        <div style={{ fontSize: 10, color: "#8c8c8c", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {d.wallet}
+                        </div>
+                      )}
                       <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>{new Date(d.createdAt).toLocaleDateString()}</Text>
+                      <a 
+                        href={`https://amoy.polygonscan.com/tx/${d.txHash}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 11 }}
+                      >
+                        Verify on Blockchain
+                      </a>
                     </div>
                     <Text strong className="text-success">+{d.amount} MATIC</Text>
                   </div>

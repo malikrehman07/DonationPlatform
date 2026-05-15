@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Button, Col, Progress, Row, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getReadOnlyContract } from "../../../../blockchain/config";
+import { ethers } from "ethers";
 
 const { Title } = Typography;
 
@@ -14,15 +16,42 @@ const Compaigns = () => {
     const [compaignTotals, setCompaignTotals] = useState({});
 
     // =========================
-    // FETCH CAMPAIGNS
+    // FETCH CAMPAIGNS (SYNCHRONIZED WITH BLOCKCHAIN)
     // =========================
     const fetchCompaigns = async () => {
         try {
             setLoading(true);
 
+            // 1. Fetch from MongoDB
             const res = await axios.get("http://localhost:5000/compaigns/read");
+            const mongoCampaigns = res.data.compaigns || [];
 
-            setCompaigns(res.data.compaigns || []);
+            // 2. Sync with Blockchain
+            const contract = getReadOnlyContract();
+            const syncedCampaigns = await Promise.all(
+                mongoCampaigns.map(async (c) => {
+                    try {
+                        if (c.blockchainCampaignId !== undefined) {
+                            const blockchainData = await contract.getCampaign(c.blockchainCampaignId);
+                            // blockchainData[2]: title, [4]: target, [5]: raised
+                            const raisedOnChain = ethers.formatEther(blockchainData[5]);
+                            const targetOnChain = ethers.formatEther(blockchainData[4]);
+                            return {
+                                ...c,
+                                title: blockchainData[2] || c.title,
+                                raisedAmount: parseFloat(raisedOnChain).toFixed(2),
+                                targetAmount: parseFloat(targetOnChain).toFixed(2)
+                            };
+                        }
+                        return c;
+                    } catch (err) {
+                        console.error(`Error syncing campaign ${c._id}:`, err);
+                        return c;
+                    }
+                })
+            );
+
+            setCompaigns(syncedCampaigns);
         } catch (err) {
             console.error(err);
         } finally {

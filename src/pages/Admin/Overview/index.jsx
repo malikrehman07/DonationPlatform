@@ -5,33 +5,49 @@ import axios from 'axios';
 import { useAuthContext } from '../../../context/Auth';
 import Donations from '../Donations';
 
+import { getReadOnlyContract } from '../../../blockchain/config';
+import { ethers } from 'ethers';
+
 const { Title, Text } = Typography;
 
 const Overview = () => {
-
   const { user } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
-
   const [thisMonthTotal, setThisMonthTotal] = useState(0);
-  const [lastMonthTotal, setLastMonthTotal] = useState(0);
   const [lifetimeTotal, setLifetimeTotal] = useState(0);
-  const [previousLastMonthTotal, setPreviousLastMonthTotal] = useState(0);
 
   useEffect(() => {
-
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/donations/stats", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
 
-        const { stats } = res.data;
-        setLifetimeTotal(stats.totalDonations);
-        setThisMonthTotal(stats.totalDonations); // Simplified for now as backend returns totals
-        setLastMonthTotal(0); 
-        setPreviousLastMonthTotal(0);
+        // 1. Fetch Global Truth from Smart Contract
+        const contract = getReadOnlyContract();
+        
+        // Fetch total campaign count directly from Blockchain
+        const campaignCount = await contract.campaignCount();
+        const totalCampaigns = Number(campaignCount);
+
+        let totalRaisedWei = BigInt(0);
+        
+        // 2. Loop through every single campaign on the Blockchain
+        // This ensures the Admin misses NOTHING, even if Mongo is out of sync
+        const campaignIndices = Array.from({ length: totalCampaigns }, (_, i) => i + 1);
+        
+        await Promise.all(campaignIndices.map(async (id) => {
+          try {
+            const blockchainData = await contract.getCampaign(id);
+            // raisedAmount is index 5
+            totalRaisedWei += BigInt(blockchainData[5]);
+          } catch (e) {
+            console.error(`Blockchain fetch error for campaign ID ${id}:`, e);
+          }
+        }));
+
+        const totalMATIC = Number(ethers.formatEther(totalRaisedWei)).toFixed(2);
+        setLifetimeTotal(totalMATIC);
+        setThisMonthTotal(totalMATIC);
 
       } catch (err) {
         console.error("Admin dashboard error:", err);
@@ -40,60 +56,8 @@ const Overview = () => {
       }
     };
 
-fetchData();
-
-}, []);
-
-// =========================
-// GROWTH CALCULATION
-// =========================
-const calcGrowth = (current, previous) => {
-
-  if (previous === 0) {
-    return {
-      percent: "+100%",
-      arrow: <ArrowUpOutlined style={{ color: "green" }} />
-    };
-  }
-
-  const diff = current - previous;
-
-  const percent = (
-    (diff / previous) * 100
-  ).toFixed(1);
-
-  return diff >= 0
-    ? {
-      percent: `+${percent}%`,
-      arrow: <ArrowUpOutlined style={{ color: "green" }} />
-    }
-    : {
-      percent: `${percent}%`,
-      arrow: <ArrowDownOutlined style={{ color: "red" }} />
-    };
-};
-
-// =========================
-// GROWTH RESULTS
-// =========================
-
-// THIS MONTH VS LAST MONTH
-const monthlyGrowth = calcGrowth(
-  thisMonthTotal,
-  lastMonthTotal
-);
-
-// LAST MONTH VS PREVIOUS LAST MONTH
-const lastMonthGrowth = calcGrowth(
-  lastMonthTotal,
-  previousLastMonthTotal
-);
-
-// LIFETIME VS LAST MONTH
-const lifetimeGrowth = calcGrowth(
-  lifetimeTotal,
-  lastMonthTotal
-);
+    fetchData();
+  }, []);
 
   if (loading) {
     return (

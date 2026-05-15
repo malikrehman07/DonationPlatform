@@ -46,13 +46,16 @@ const AllCompaigns = () => {
               compaign.blockchainCampaignId
             );
 
+            const raisedOnChain = ethers.formatEther(blockchainData[5]);
+            const targetOnChain = ethers.formatEther(blockchainData[4]);
+            const titleOnChain = blockchainData[2];
             return {
               ...compaign,
+              title: titleOnChain || compaign.title,
               blockchainId: Number(blockchainData[0]),
-              // We keep the MongoDB raisedAmount as it includes both card & blockchain donations
-              raisedAmount: compaign.raisedAmount,
-              targetAmount: compaign.targetAmount,
-              status: compaign.status
+              raisedAmount: parseFloat(raisedOnChain).toFixed(2),
+              targetAmount: parseFloat(targetOnChain).toFixed(2),
+              status: Number(raisedOnChain) >= Number(targetOnChain) ? "completed" : compaign.status
             };
           } catch (error) {
             console.error("Blockchain fetch error:", error);
