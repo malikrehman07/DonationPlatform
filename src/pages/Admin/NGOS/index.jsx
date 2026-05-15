@@ -1,20 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Typography,
-  Tag,
-  Button,
-  Space,
-  Image,
-  Select,
-  Spin,
-  Modal,
-  Input,
-  Row,
-  Col,
-  Card,
-  DatePicker
-} from "antd";
+import { Table, Typography, Tag, Button, Space, Image, Select, Spin, Modal, Input, Row, Col, Card, DatePicker} from "antd";
 import axios from "axios";
 import dayjs from "dayjs";
 

@@ -1,15 +1,10 @@
 import React from 'react';
 import { Layout, Menu, Button } from 'antd';
-import {
-  BarChartOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
-  CreditCardOutlined,
-} from '@ant-design/icons';
+import { BarChartOutlined, UserOutlined, CheckCircleOutlined, CreditCardOutlined,} from '@ant-design/icons';
 import { Link, Routes, Route, Outlet, useLocation } from 'react-router-dom';
-import NGOs from './NGOs';
 import { useAuthContext } from '../../context/Auth';
 import Overview from './Overview';
+import NGOs from './NGOs';
 import Donations from './Donations';
 import Donors from './Donors';
 
@@ -70,7 +65,7 @@ const Admin = () => {
 
           <Routes>
             <Route path="/overview" element={<Overview />} />
-            <Route path="/ngos" element={<NGOs />} />
+            <Route path="/ngos/*" element={<NGOs />} />
             <Route path="/donations" element={<Donations />} />
             <Route path="/donors" element={<Donors />} />
           </Routes>
