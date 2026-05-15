@@ -4,7 +4,7 @@ import Companies from './Companies'
 import Compaigns from './Compaigns'
 import Help from './Help'
 import Donate from './Donate'
-import NewsLetter from './Newsletter'
+import NewsLetter from './NewsLetter'
 
 const Home = () => {
   return (
