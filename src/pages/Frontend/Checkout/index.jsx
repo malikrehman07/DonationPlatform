@@ -277,7 +277,7 @@ const CheckoutForm = () => {
                                         <Radio.Button value="card" className="w-100 text-center py-2 h-auto">
                                             <div className="py-2">
                                                 <GlobalOutlined style={{ fontSize: 30, color: '#f5222d' }} className="mb-2" />
-                                                <br /> Card to Polygon (Alchemy Pay)
+                                                <br /> Credit or Debit Card
                                             </div>
                                         </Radio.Button>
                                     </Col>

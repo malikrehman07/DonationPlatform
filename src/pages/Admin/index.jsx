@@ -1,12 +1,13 @@
 import React from 'react';
 import { Layout, Menu, Button } from 'antd';
-import { BarChartOutlined, UserOutlined, CheckCircleOutlined, CreditCardOutlined,} from '@ant-design/icons';
+import { BarChartOutlined, UserOutlined, CheckCircleOutlined, CreditCardOutlined, SettingOutlined } from '@ant-design/icons';
 import { Link, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../../context/Auth';
 import Overview from './Overview';
 import NGOs from './NGOs';
 import Donations from './Donations';
 import Donors from './Donors';
+import Settings from './Settings';
 
 const { Header, Sider, Content } = Layout;
 
@@ -19,6 +20,7 @@ const Admin = () => {
     if (location.pathname.includes('/ngos')) return '2';
     if (location.pathname.includes('/donations')) return '3';
     if (location.pathname.includes('/donors')) return '4';
+    if (location.pathname.includes('/settings')) return '5';
     return '';
   };
 
@@ -46,6 +48,9 @@ const Admin = () => {
           <Menu.Item key="4" icon={<UserOutlined />}>
             <Link to="/admin/donors">Donors</Link>
           </Menu.Item>
+          <Menu.Item key="5" icon={<SettingOutlined />}>
+            <Link to="/admin/settings">Settings</Link>
+          </Menu.Item>
         </Menu>
       </Sider>
 
@@ -68,6 +73,7 @@ const Admin = () => {
             <Route path="/ngos/*" element={<NGOs />} />
             <Route path="/donations" element={<Donations />} />
             <Route path="/donors" element={<Donors />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
 
           <Outlet />

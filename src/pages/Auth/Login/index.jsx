@@ -65,7 +65,10 @@ const Login = () => {
                         <Row>
                             <Col span={24} >
                                 <Button type='primary' variant='solid' htmlType='submit' block loading={isProcessing} onClick={handleSubmit} >Login</Button>
-                                <Paragraph className='text-center my-1' >Don't have an account?<Link to="/auth/register" >Register</Link></Paragraph>
+                                <div className='d-flex justify-content-between flex-wrap align-items-center my-2'>
+                                    <Link to="/auth/forgot-password" style={{ color: '#07887f', textDecoration: 'none', fontWeight: '500' }}>Forgot Password?</Link>
+                                    <Paragraph className='m-0' style={{ display: 'inline' }}>Don't have an account? <Link to="/auth/register" style={{ color: '#07887f', fontWeight: '500' }}>Register</Link></Paragraph>
+                                </div>
                             </Col>
                         </Row>
                     </Form>

@@ -126,7 +126,7 @@ const Compaigns = () => {
                                             <Title
                                                 level={4}
                                                 style={{
-                                                    height: "50px",
+                                                    height: "60px",
                                                     overflow: "hidden",
                                                 }}
                                             >
