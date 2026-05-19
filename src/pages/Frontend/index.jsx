@@ -10,6 +10,9 @@ import CompaignPage from './CompaignPage'
 import AllCompaigns from './AllCompaigns'
 import Checkout from './Checkout'
 import ThankYou from './ThankYou'
+import NGOs from './NGOs'
+import NgoProfile from './NgoProfile'
+
 const Frontend = () => {
   return (
     <>
@@ -20,6 +23,8 @@ const Frontend = () => {
         <Route path="/compaign/:id" element={<CompaignPage />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="/ngos" element={<NGOs />} />
+        <Route path="/ngo/:id" element={<NgoProfile />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NoPage />} />

@@ -46,11 +46,50 @@ const Register = () => {
         // =========================
         // VALIDATION
         // =========================
+        if (!firstName.trim() || firstName.trim().length < 2)
+            return window.notify("First Name is required and must be at least 2 characters", "error")
+
+        if (!lastName.trim() || lastName.trim().length < 2)
+            return window.notify("Last Name is required and must be at least 2 characters", "error")
+
+        if (!email || !window.isEmail(email))
+            return window.notify("Please enter a valid email address", "error")
+
+        if (!role)
+            return window.notify("Please select a role", "error")
+
+        if (!password || password.length < 8)
+            return window.notify("Password must be at least 8 characters", "error")
+
         if (password !== confirmPassword)
             return window.notify("Passwords do not match", "error")
 
-        if (!role)
-            return window.notify("Select role", "error")
+        // =========================
+        // NGO VALIDATION
+        // =========================
+        if (isNgo) {
+            if (!state.organizationName || !state.organizationName.trim())
+                return window.notify("Organization Name is required", "error")
+
+            if (!state.registrationNumber || !state.registrationNumber.trim())
+                return window.notify("Registration Number is required", "error")
+
+            if (!state.address || !state.address.trim())
+                return window.notify("Address is required", "error")
+
+            if (!state.phone || !state.phone.trim() || state.phone.trim().length < 7)
+                return window.notify("Phone number is required and must be at least 7 digits", "error")
+
+            const websiteRegex = /^(https?:\/\/)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(\/.*)?$/
+            if (!state.website || !websiteRegex.test(state.website.trim()))
+                return window.notify("Please enter a valid website URL (e.g., www.example.com)", "error")
+
+            if (!state.description || !state.description.trim() || state.description.trim().length < 20)
+                return window.notify("Description is required and must be at least 20 characters", "error")
+
+            if (!fileList || fileList.length < 1)
+                return window.notify("Please upload at least one document", "error")
+        }
 
         // =========================
         // FORM DATA (IMPORTANT FOR FILES)
