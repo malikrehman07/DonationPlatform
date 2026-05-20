@@ -7,7 +7,7 @@ import { useAuthContext } from '../../../context/Auth'
 
 const initialState = { email: '', password: '' }
 const Login = () => {
-    const { Paragraph } = Typography;
+    const { Title, Paragraph } = Typography;
     const { readProfile } = useAuthContext()
     const [state, setState] = useState(initialState)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -50,7 +50,7 @@ const Login = () => {
         <main className="auth p-3 p-md-4 p-lg-5">
             <div className='container'>
                 <div className="card p-3 p-md-4 ">
-                    <div className="mb-3 d-flex align-items-center">
+                    <div className="d-flex align-items-center mb-4" style={{ position: 'relative', minHeight: '40px' }}>
                         <Link
                             to="/"
                             className="d-inline-flex align-items-center text-decoration-none justify-content-center"
@@ -60,22 +60,38 @@ const Login = () => {
                                 width: '38px',
                                 height: '38px',
                                 borderRadius: '50%',
-                                backgroundColor: 'rgba(7, 136, 127, 0.1)',
+                                backgroundColor: 'rgba(7, 136, 127, 0.08)',
                                 transition: 'all 0.2s ease',
-                                border: '1px solid rgba(7, 136, 127, 0.2)'
+                                border: '1px solid rgba(7, 136, 127, 0.15)',
+                                zIndex: 2
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.2)';
+                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.15)';
                                 e.currentTarget.style.transform = 'translateX(-3px)';
                             }}
                             onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.1)';
+                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.08)';
                                 e.currentTarget.style.transform = 'none';
                             }}
                             title="Back to Homepage"
                         >
                             <ArrowLeftOutlined />
                         </Link>
+                        <Title
+                            level={3}
+                            className="m-0 text-center w-100"
+                            style={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                color: '#07887f',
+                                fontWeight: '600',
+                                pointerEvents: 'none',
+                                margin: 0
+                            }}
+                        >
+                            Login
+                        </Title>
                     </div>
                     <Form layout='vertical' >
                         <Row gutter={[16]} >
