@@ -7,7 +7,7 @@ const Copyright = () => {
     <div className="container">
         <Row>
             <Col span={24} >
-            <p className="text-center text-black mb-1" >&copy;{year}. All Rights Reserved.</p>
+            <p className="text-center text-black mb-1" >&copy;{year} Malik Rehman. All Rights Reserved.</p>
             </Col>
         </Row>
     </div>

@@ -15,16 +15,16 @@ const Menu = () => {
                 <Col xs={12} sm={12} md={6} lg={6} >
                     <Title level={4} >Useful Links</Title>
                     <Link to='/about' className="nav-link py-1" >About Us</Link>
-                    <Link to='/' className="nav-link py-1" >Events</Link>
-                    <Link to='/' className="nav-link py-1" >Blog</Link>
-                    <Link to='/' className="nav-link py-1" >FAQ</Link>
+                    <Link to='/ngos' className="nav-link py-1" >NGOS</Link>
+                    {/* <Link to='/' className="nav-link py-1" >Blog</Link>
+                    <Link to='/' className="nav-link py-1" >FAQ</Link> */}
                 </Col>
                 <Col xs={12} sm={12} md={6} lg={6} >
                     <Title level={4} >Main Menu</Title>
                     <Link to='/' className="nav-link py-1" >Home</Link>
-                    <Link to='/' className="nav-link py-1" >Offers</Link>
+                    {/* <Link to='/' className="nav-link py-1" >Offers</Link> */}
                     <Link to='/compaigns' className="nav-link py-1" >Compaign</Link>
-                    <Link to='/' className="nav-link py-1" >Reservation</Link>
+                    {/* <Link to='/' className="nav-link py-1" >Reservation</Link> */}
                 </Col>
                 <Col xs={12} sm={12} md={6} lg={6} >
                     <Title level={4} >Contact Us</Title>
