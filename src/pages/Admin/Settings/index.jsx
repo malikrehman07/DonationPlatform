@@ -21,13 +21,16 @@ const Settings = () => {
   }, [user, form]);
 
   const handleSubmit = async (values) => {
-    const { email, password, confirmPassword } = values;
+    const { email, password, oldPassword, confirmPassword } = values;
 
     if (email && !window.isEmail(email)) {
       return window.notify("Please enter a valid email address", "error");
     }
 
     if (password) {
+      if (!oldPassword) {
+        return window.notify("Please enter your previous password", "error");
+      }
       if (password.length < 8) {
         return window.notify("Password must be at least 8 characters long", "error");
       }
@@ -40,7 +43,10 @@ const Settings = () => {
     try {
       const token = localStorage.getItem("token");
       const payload = { email };
-      if (password) payload.password = password;
+      if (password) {
+        payload.password = password;
+        payload.oldPassword = oldPassword;
+      }
 
       const res = await axios.put(
         "https://apigivehopes.vercel.app/auth/update-profile",
@@ -57,6 +63,7 @@ const Settings = () => {
       // Update Auth context and reset password fields
       await readProfile();
       form.setFieldsValue({
+        oldPassword: "",
         password: "",
         confirmPassword: "",
       });
@@ -110,6 +117,29 @@ const Settings = () => {
           <Paragraph style={{ fontWeight: 600, color: "#07887f", marginBottom: "16px" }}>
             Change Password (Leave blank to keep current password)
           </Paragraph>
+
+          {/* OLD PASSWORD */}
+          <Form.Item
+            label="Previous (Old) Password"
+            name="oldPassword"
+            dependencies={["password"]}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (getFieldValue("password") && !value) {
+                    return Promise.reject(new Error("Please enter your previous password to update password"));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined className="text-muted" />}
+              placeholder="Enter your current/old password"
+              size="large"
+            />
+          </Form.Item>
 
           {/* PASSWORD */}
           <Form.Item

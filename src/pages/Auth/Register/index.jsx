@@ -1,5 +1,5 @@
 import { Button, Col, Form, Input, Row, Select, Typography, Upload } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -159,6 +159,33 @@ const Register = () => {
         <main className="auth p-3 p-md-4 p-lg-5">
             <div className='container'>
                 <div className="card p-3 p-md-4">
+                    <div className="mb-3 d-flex align-items-center">
+                        <Link
+                            to="/"
+                            className="d-inline-flex align-items-center text-decoration-none justify-content-center"
+                            style={{
+                                color: '#07887f',
+                                fontSize: '18px',
+                                width: '38px',
+                                height: '38px',
+                                borderRadius: '50%',
+                                backgroundColor: 'rgba(7, 136, 127, 0.1)',
+                                transition: 'all 0.2s ease',
+                                border: '1px solid rgba(7, 136, 127, 0.2)'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.2)';
+                                e.currentTarget.style.transform = 'translateX(-3px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(7, 136, 127, 0.1)';
+                                e.currentTarget.style.transform = 'none';
+                            }}
+                            title="Back to Homepage"
+                        >
+                            <ArrowLeftOutlined />
+                        </Link>
+                    </div>
 
                     <Form layout='vertical'>
 
