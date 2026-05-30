@@ -13,64 +13,72 @@ const Donations = () => {
   const [loading, setLoading] = useState(true);
 
   // =========================
-  // FETCH DONATIONS (BLOCKCHAIN ONLY HISTORICAL EVENTS)
+  // FETCH DONATIONS (HYBRID: MongoDB Records + Blockchain Verification)
   // =========================
   useEffect(() => {
 
     const fetchDonations = async () => {
       try {
+        const token = localStorage.getItem("token");
         const contract = getReadOnlyContract();
-        const provider = new ethers.JsonRpcProvider("https://polygon-amoy-bor-rpc.publicnode.com");
-        
-        // 1. Get All Campaigns for Title Mapping
+
+        // 1. Get All Campaigns for blockchain ID mapping
         const compRes = await axios.get("https://apigivehopes.vercel.app/compaigns/read");
         const allCampaigns = compRes.data.compaigns || [];
 
-        // 2. Scan All DonationReceived Events from Block 0
-        const filter = contract.filters.DonationReceived();
-        const allEvents = await contract.queryFilter(filter, 0);
+        // 2. Fetch donation records from MongoDB
+        const res = await axios.get(
+          "https://apigivehopes.vercel.app/donations/all",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const mongoDonations = res.data.donations || [];
 
-        // 3. Map events to Donation layout
-        const resolvedHistory = await Promise.all(allEvents.map(async (evt) => {
-            let blockTime = new Date().toISOString();
+        // 3. Verify each donation's amount on-chain via tx hash
+        //    and fetch campaign title from blockchain via getCampaign()
+        const verifiedHistory = await Promise.all(mongoDonations.map(async (d) => {
+            let verifiedAmount = null;
+            let blockchainTitle = null;
+
+            // Verify amount from blockchain transaction
             try {
-                const block = await provider.getBlock(evt.blockNumber);
-                if (block) {
-                    blockTime = new Date(block.timestamp * 1000).toISOString();
+                if (d.transactionHash) {
+                    const tx = await contract.provider.getTransaction(d.transactionHash);
+                    if (tx) {
+                        verifiedAmount = ethers.formatEther(tx.value);
+                    }
                 }
-            } catch (blockErr) {
-                console.warn("Failed to retrieve block timestamp:", evt.blockNumber, blockErr);
+            } catch (err) {
+                console.warn("Amount verification failed for:", d.transactionHash);
             }
 
-            const bcId = Number(evt.args.campaignId);
-            const donorAddress = evt.args.donor;
-            const amountEth = ethers.formatEther(evt.args.amount);
-
-            // Find campaign metadata from MongoDB campaigns API to map title & NGO info
-            const campaignMatch = allCampaigns.find(c => c.blockchainCampaignId === bcId);
+            // Fetch campaign title from blockchain via getCampaign()
+            try {
+                const bcId = d.campaign?.blockchainCampaignId;
+                if (bcId !== undefined && bcId !== null) {
+                    const campaignData = await contract.getCampaign(bcId);
+                    blockchainTitle = campaignData[2]; // title is index 2
+                }
+            } catch (err) {
+                console.warn("Blockchain title fetch failed for campaign:", d.campaign?._id);
+            }
 
             return {
-                _id: `${evt.transactionHash}-${evt.index || Math.random()}`,
-                transactionHash: evt.transactionHash,
-                amount: parseFloat(amountEth).toFixed(4),
-                donorName: `${donorAddress.slice(0, 6)}...${donorAddress.slice(-4)}`,
-                donorEmail: "On-Chain Wallet",
-                ngo: {
-                    organizationName: campaignMatch?.createdBy?.organizationName || "Unknown NGO"
-                },
+                ...d,
+                amount: verifiedAmount
+                    ? parseFloat(verifiedAmount).toFixed(4)
+                    : parseFloat(d.amount || 0).toFixed(4),
                 campaign: {
-                    title: campaignMatch?.title || `Campaign #${bcId}`
+                    ...d.campaign,
+                    title: blockchainTitle || d.campaign?.title || "Unknown"
                 },
-                createdAt: blockTime,
-                status: "Completed",
-                isVerified: true
+                isVerified: !!verifiedAmount
             };
         }));
 
-        setDonations(resolvedHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        setDonations(verifiedHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
       } catch (err) {
-        console.error("Error fetching blockchain donations:", err);
+        console.error("Error fetching donations:", err);
       } finally {
         setLoading(false);
       }
