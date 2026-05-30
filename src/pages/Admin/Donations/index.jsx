@@ -13,90 +13,64 @@ const Donations = () => {
   const [loading, setLoading] = useState(true);
 
   // =========================
-  // FETCH DONATIONS (PERMANENT HYBRID HISTORY)
+  // FETCH DONATIONS (BLOCKCHAIN ONLY HISTORICAL EVENTS)
   // =========================
   useEffect(() => {
 
     const fetchDonations = async () => {
       try {
-        const token = localStorage.getItem("token");
         const contract = getReadOnlyContract();
+        const provider = new ethers.JsonRpcProvider("https://polygon-amoy-bor-rpc.publicnode.com");
         
         // 1. Get All Campaigns for Title Mapping
         const compRes = await axios.get("https://apigivehopes.vercel.app/compaigns/read");
         const allCampaigns = compRes.data.compaigns || [];
 
-        // 2. Fetch Full History from MongoDB (Base)
-        const res = await axios.get(
-          "https://apigivehopes.vercel.app/donations/all",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const mongoDonations = res.data.donations || [];
-
-        // 3. Scan Recent Blocks
+        // 2. Scan All DonationReceived Events from Block 0
         const filter = contract.filters.DonationReceived();
-        const recentEvents = await contract.queryFilter(filter, -1000);
-        const bcMap = {};
-        recentEvents.forEach(e => {
-            bcMap[e.transactionHash.toLowerCase()] = ethers.formatEther(e.args.amount);
-        });
+        const allEvents = await contract.queryFilter(filter, 0);
 
-        // 4. Verification Engine for Entire History
-        const verifiedHistory = await Promise.all(mongoDonations.map(async (d) => {
+        // 3. Map events to Donation layout
+        const resolvedHistory = await Promise.all(allEvents.map(async (evt) => {
+            let blockTime = new Date().toISOString();
             try {
-                // Priority 1: Recent scan
-                let verifiedAmount = bcMap[d.transactionHash?.toLowerCase()];
-                
-                // Priority 2: Direct Tx fetch for older history
-                if (!verifiedAmount && d.transactionHash) {
-                    const tx = await contract.provider.getTransaction(d.transactionHash);
-                    if (tx) verifiedAmount = ethers.formatEther(tx.value);
+                const block = await provider.getBlock(evt.blockNumber);
+                if (block) {
+                    blockTime = new Date(block.timestamp * 1000).toISOString();
                 }
-
-                if (verifiedAmount) {
-                    const bcId = Number(d.campaign?.blockchainCampaignId || 0);
-                    const campaignMatch = allCampaigns.find(c => c._id === d.campaign?._id);
-
-                    return {
-                        ...d,
-                        amount: parseFloat(verifiedAmount).toFixed(2),
-                        isVerified: true
-                    };
-                }
-            } catch (err) {
-                console.warn("Admin history verification failed for:", d.transactionHash);
+            } catch (blockErr) {
+                console.warn("Failed to retrieve block timestamp:", evt.blockNumber, blockErr);
             }
-            return { ...d, isVerified: false };
+
+            const bcId = Number(evt.args.campaignId);
+            const donorAddress = evt.args.donor;
+            const amountEth = ethers.formatEther(evt.args.amount);
+
+            // Find campaign metadata from MongoDB campaigns API to map title & NGO info
+            const campaignMatch = allCampaigns.find(c => c.blockchainCampaignId === bcId);
+
+            return {
+                _id: `${evt.transactionHash}-${evt.index || Math.random()}`,
+                transactionHash: evt.transactionHash,
+                amount: parseFloat(amountEth).toFixed(4),
+                donorName: `${donorAddress.slice(0, 6)}...${donorAddress.slice(-4)}`,
+                donorEmail: "On-Chain Wallet",
+                ngo: {
+                    organizationName: campaignMatch?.createdBy?.organizationName || "Unknown NGO"
+                },
+                campaign: {
+                    title: campaignMatch?.title || `Campaign #${bcId}`
+                },
+                createdAt: blockTime,
+                status: "Completed",
+                isVerified: true
+            };
         }));
 
-        // 5. Add "Direct" donations from recent scan not in MongoDB
-        const directDonations = recentEvents
-            .filter(evt => !mongoDonations.some(d => d.transactionHash?.toLowerCase() === evt.transactionHash.toLowerCase()))
-            .map(evt => {
-                const bcId = Number(evt.args.campaignId);
-                const campaignMatch = allCampaigns.find(c => c.blockchainCampaignId === bcId);
-                return {
-                    _id: evt.transactionHash,
-                    transactionHash: evt.transactionHash,
-                    amount: parseFloat(ethers.formatEther(evt.args.amount)).toFixed(2),
-                    donorName: "Direct Wallet Donor",
-                    donorEmail: "N/A",
-                    ngo: {
-                        organizationName: campaignMatch?.createdBy?.organizationName || "Unknown NGO"
-                    },
-                    campaign: {
-                        title: campaignMatch?.title || `Campaign #${bcId}`
-                    },
-                    createdAt: new Date().toISOString(),
-                    status: "Completed",
-                    isVerified: true
-                };
-            });
-
-        setDonations([...verifiedHistory, ...directDonations].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        setDonations(resolvedHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
       } catch (err) {
-        console.error("Error fetching admin permanent donations:", err);
+        console.error("Error fetching blockchain donations:", err);
       } finally {
         setLoading(false);
       }

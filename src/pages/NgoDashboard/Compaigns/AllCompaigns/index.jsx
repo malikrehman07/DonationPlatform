@@ -153,25 +153,6 @@ const AllCompaigns = () => {
           </Tag>
         );
       }
-    },
-
-    {
-      title: "Actions",
-      render: (_, record) => (
-        <Space>
-
-          <Button
-            type="primary"
-            size="small"
-            onClick={() =>
-              navigate(`/dashboard/compaign/edit/${record._id}`)
-            }
-          >
-            View / Edit
-          </Button>
-
-        </Space>
-      )
     }
   ];
 
