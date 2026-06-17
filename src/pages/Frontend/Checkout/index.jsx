@@ -268,7 +268,7 @@ const CheckoutForm = () => {
                                     <Col span={12}>
                                         <Radio.Button value="crypto" className="w-100 text-center py-2 h-auto">
                                             <div className="py-2">
-                                                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Logo.svg" alt="MetaMask" height="30" className="mb-2" />
+                                                <GlobalOutlined style={{ fontSize: 30, color: '#f5222d' }} className="mb-2" />
                                                 <br /> MetaMask (MATIC)
                                             </div>
                                         </Radio.Button>

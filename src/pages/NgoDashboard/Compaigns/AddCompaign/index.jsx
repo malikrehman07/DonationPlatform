@@ -67,8 +67,14 @@ const AddCompaign = () => {
             return false;
         }
 
-        if (!description || description.length > 500) {
-            message.error("Description required (max 500 chars)");
+        if (!description) {
+            message.error("Description required");
+            return false;
+        }
+
+        const wordCount = description.trim().split(/\s+/).length;
+        if (wordCount > 500) {
+            message.error("Description cannot exceed 500 words");
             return false;
         }
 
@@ -95,6 +101,12 @@ const AddCompaign = () => {
         for (const file of fileList) {
             if (file.size > 500 * 1024) {
                 message.error("Each image must be 500 KB or less");
+                return false;
+            }
+            
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (file.type && !validTypes.includes(file.type)) {
+                message.error("Only JPG and PNG images are allowed");
                 return false;
             }
         }
@@ -279,6 +291,7 @@ const AddCompaign = () => {
                     <Form.Item label="Upload Images" required>
                         <Upload
                             multiple
+                            accept="image/png, image/jpeg, image/jpg"
                             listType="picture"
                             beforeUpload={() => false}
                             fileList={fileList}
