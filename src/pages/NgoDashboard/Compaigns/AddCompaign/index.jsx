@@ -87,6 +87,18 @@ const AddCompaign = () => {
             return false;
         }
 
+        if (fileList.length > 2) {
+            message.error("Maximum 2 images allowed per campaign");
+            return false;
+        }
+
+        for (const file of fileList) {
+            if (file.size > 500 * 1024) {
+                message.error("Each image must be 500 KB or less");
+                return false;
+            }
+        }
+
         if (!window.ethereum) {
             message.error("Please install MetaMask to create a campaign");
             return false;

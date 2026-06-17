@@ -27,10 +27,11 @@ const Settings = () => {
       return window.notify("Please enter a valid email address", "error");
     }
 
+    if (!oldPassword) {
+      return window.notify("Please enter your current password to save changes", "error");
+    }
+
     if (password) {
-      if (!oldPassword) {
-        return window.notify("Please enter your previous password", "error");
-      }
       if (password.length < 8) {
         return window.notify("Password must be at least 8 characters long", "error");
       }
@@ -42,10 +43,9 @@ const Settings = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const payload = { email };
+      const payload = { email, oldPassword };
       if (password) {
         payload.password = password;
-        payload.oldPassword = oldPassword;
       }
 
       const res = await axios.put(
@@ -120,23 +120,15 @@ const Settings = () => {
 
           {/* OLD PASSWORD */}
           <Form.Item
-            label="Previous (Old) Password"
+            label="Current Password"
             name="oldPassword"
-            dependencies={["password"]}
             rules={[
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (getFieldValue("password") && !value) {
-                    return Promise.reject(new Error("Please enter your previous password to update password"));
-                  }
-                  return Promise.resolve();
-                },
-              }),
+              { required: true, message: "Please enter your current password to save changes" }
             ]}
           >
             <Input.Password
               prefix={<LockOutlined className="text-muted" />}
-              placeholder="Enter your current/old password"
+              placeholder="Enter your current password to authorize changes"
               size="large"
             />
           </Form.Item>
