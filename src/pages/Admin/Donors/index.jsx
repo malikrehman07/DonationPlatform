@@ -144,6 +144,7 @@ const Donors = () => {
             columns={columns}
             dataSource={donors}
             pagination={{ pageSize: 8 }}
+            scroll={{ x: 'max-content' }}
           />
         </Col>
       </Row>

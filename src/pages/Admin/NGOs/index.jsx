@@ -293,8 +293,17 @@ const NGOs = () => {
   ];
 
   if (loading) {
-    return <Spin size="large" style={{ marginTop: 100 }} />;
-  }
+          return (
+              <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "70vh"
+              }}>
+                  <Spin size="large" />
+              </div>
+          );
+      }
 
   return (
     <div>
@@ -341,6 +350,7 @@ const NGOs = () => {
         columns={columns}
         dataSource={filteredNgos}
         pagination={{ pageSize: 6 }}
+        scroll={{ x: 'max-content' }}
       />
 
       {/* MODAL */}

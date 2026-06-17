@@ -194,6 +194,7 @@ const Donations = () => {
         columns={columns}
         dataSource={donations}
         pagination={{ pageSize: 6 }}
+        scroll={{ x: 'max-content' }}
       />
 
     </div>
